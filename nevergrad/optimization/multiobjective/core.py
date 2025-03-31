@@ -198,7 +198,7 @@ class ParetoFront:
         Implementation from: https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python
         """
 
-        costs = np.array([param.losses for param in self._pareto])
+        costs: np.ndarray = np.array([param.losses for param in self._pareto])
         is_efficient = np.arange(costs.shape[0])
         if len(costs) < 1:
             return is_efficient
