@@ -7725,6 +7725,10 @@ TripleOnePlusOne = ConfPortfolio(
     optimizers=[OnePlusOne, OnePlusOne, OnePlusOne],
     warmup_ratio=0.5,
 ).set_name("TripleOnePlusOne", register=True)
+TripleDiagonalCMA = ConfPortfolio(
+    optimizers=[DiagonalCMA, DiagonalCMA, DiagonalCMA],
+    warmup_ratio=0.5,
+).set_name("TripleDiagonalCMA", register=True)
 NgIohLn = Chaining([LognormalDiscreteOnePlusOne, CSEC11], ["tenth"]).set_name("NgIohLn", register=True)
 CMALn = Chaining([LognormalDiscreteOnePlusOne, CMA], ["tenth"]).set_name("CMALn", register=True)
 CMARS = Chaining([RandomSearch, CMA], ["tenth"]).set_name("CMARS", register=True)
