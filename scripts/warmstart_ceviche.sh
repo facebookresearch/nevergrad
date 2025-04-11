@@ -6,7 +6,11 @@
 #SBATCH --partition=scavenge
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=70
+<<<<<<< HEAD
+#SBATCH -a 0-900%50
+=======
 #SBATCH -a 0-700%330
+>>>>>>> upstream/main
 
 
 #999%200
@@ -34,7 +38,8 @@ echo Starting at
 date
 # num_workers is the number of processes. Maybe use a bit more than the number of cores at the line "cpus-per-task"
 # above.
-time python -m nevergrad.benchmark $task --num_workers=1 2>&1 | cut -c1-180 | egrep '[A-Zf-z]'
+./updatebest2.sh
+time python -m nevergrad.benchmark $task --num_workers=7 2>&1 | cut -c1-180 | egrep '[A-Zf-z]'
 #python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
 #python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
 #python -m nevergrad.benchmark $task --num_workers=1 2>&1 | tail -n 50
