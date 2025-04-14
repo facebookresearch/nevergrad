@@ -193,18 +193,23 @@ class ParetoFront:
         self._pareto.append(parameter)
         self._pareto_needs_filtering = True
 
-    def _filter_pareto_front(self) -> None:
-        """Filters the Pareto front"""
-        new_pareto: tp.List[p.Parameter] = []
-        for param in self._pareto:  # quadratic :(
-            should_be_added = True
-            for other in self._pareto:
-                if (other.losses <= param.losses).all() and (other.losses < param.losses).any():
-                    should_be_added = False
-                    break
-            if should_be_added:
-                new_pareto.append(param)
-        self._pareto = new_pareto
+    def _filter_pareto_front(self):
+        """Filters the Pareto front by removing dominated points.
+        Implementation from: https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python
+        """
+
+        costs: np.ndarray = np.array([param.losses for param in self._pareto])
+        is_efficient = np.arange(costs.shape[0])
+        if len(costs) < 1:
+            return is_efficient
+        next_point_index = 0  # Next index in the is_efficient array to search for
+        while next_point_index < len(costs):
+            nondominated_point_mask = np.any(costs < costs[next_point_index], axis=1)
+            nondominated_point_mask[next_point_index] = True
+            is_efficient = is_efficient[nondominated_point_mask]  # Remove dominated points
+            costs = costs[nondominated_point_mask]
+            next_point_index = np.sum(nondominated_point_mask[:next_point_index]) + 1
+        self._pareto = [param for i, param in enumerate(self._pareto) if i in is_efficient]
         self._pareto_needs_filtering = False
 
     def get_raw(self) -> tp.List[p.Parameter]:
