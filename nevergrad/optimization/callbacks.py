@@ -19,6 +19,7 @@ from . import base
 
 global_logger = logging.getLogger(__name__)
 
+# -------------------------------------------------------------------------------------
 
 class OptimizationPrinter:
     """Printer to register as callback in an optimizer, for printing
@@ -47,6 +48,7 @@ class OptimizationPrinter:
             x = optimizer.provide_recommendation()
             print(f"After {optimizer.num_tell}, recommendation is {x}")  # TODO fetch value
 
+# -------------------------------------------------------------------------------------
 
 class OptimizationLogger:
     """Logger to register as callback in an optimizer, for Logging
@@ -97,6 +99,7 @@ class OptimizationLogger:
                     losses,
                 )
 
+# -------------------------------------------------------------------------------------
 
 class ParametersLogger:
     """Logs parameter and run information throughout into a file during
@@ -257,6 +260,7 @@ class ParametersLogger:
         exp.display_data(hip.Displays.XY).update({"lines_thickness": 1.0, "lines_opacity": 1.0})
         return exp
 
+# -------------------------------------------------------------------------------------
 
 class OptimizerDump:
     """Dumps the optimizer to a pickle file at every call.
@@ -273,6 +277,7 @@ class OptimizerDump:
     def __call__(self, opt: base.Optimizer, *args: tp.Any, **kwargs: tp.Any) -> None:
         opt.dump(self._filepath)
 
+# -------------------------------------------------------------------------------------
 
 class ProgressBar:
     """Progress bar to register as callback in an optimizer"""
@@ -303,6 +308,7 @@ class ProgressBar:
         state["_progress_bar"] = None
         return state
 
+# -------------------------------------------------------------------------------------
 
 class EarlyStopping:
     """Callback for stopping the :code:`minimize` method before the budget is
@@ -351,6 +357,80 @@ class EarlyStopping:
     def no_improvement_stopper(cls, tolerance_window: int) -> "EarlyStopping":
         """Early stop when loss didn't reduce during tolerance_window asks"""
         return cls(_LossImprovementToleranceCriterion(tolerance_window))
+
+class _DurationCriterion:
+    def __init__(self, max_duration: float) -> None:
+        self._start = float("inf")
+        self._max_duration = max_duration
+
+    def __call__(self, optimizer: base.Optimizer) -> bool:
+        if np.isinf(self._start):
+            self._start = time.time()
+        return time.time() > self._start + self._max_duration
+
+class _LossImprovementToleranceCriterion:
+    def __init__(self, tolerance_window: int) -> None:
+        self._tolerance_window: int = tolerance_window
+        self._best_value: tp.Optional[np.ndarray] = None
+        self._tolerance_count: int = 0
+
+    def __call__(self, optimizer: base.Optimizer) -> bool:
+        best_param = optimizer.provide_recommendation()
+        if best_param is None or (best_param.loss is None and best_param._losses is None):
+            return False
+        best_last_losses = best_param.losses
+        if self._best_value is None:
+            self._best_value = best_last_losses
+            return False
+        if self._best_value <= best_last_losses:
+            self._tolerance_count += 1
+        else:
+            self._tolerance_count = 0
+            self._best_value = best_last_losses
+        return self._tolerance_count > self._tolerance_window
+
+# -------------------------------------------------------------------------------------
+
+import os
+import time
+
+class SlurmStopping:
+    def __init__(self, threshold_seconds=300):
+        self.threshold = threshold_seconds
+        self.start_time = time.time()
+        self.job_start_time = self._get_slurm_start_time()
+        self.job_duration = self._get_slurm_duration()
+        self.job_end_time = self.job_start_time + self.job_duration
+
+    def __call__(self, optimizer):
+        current_time = time.time()
+        time_left = self.job_end_time - current_time
+        if time_left <= self.threshold:
+            raise errors.NevergradEarlyStopping(f"SLURM timeout: {self.threshold} seconds remaining. Stopping optimization.")
+
+    def _get_slurm_start_time(self):
+        # Attempt to retrieve the SLURM job start time from environment variables
+        start_time_str = os.environ.get("SLURM_JOB_START_TIME")
+        if start_time_str:
+            try:
+                return float(start_time_str)
+            except ValueError:
+                pass
+        # Fallback to current time if not set
+        return self.start_time
+
+    def _get_slurm_duration(self):
+        # Attempt to retrieve the SLURM job duration from environment variables
+        duration_str = os.environ.get("SLURM_JOB_DURATION")
+        if duration_str:
+            try:
+                return float(duration_str)
+            except ValueError:
+                pass
+        # Fallback to a default duration (e.g., 1 hour) if not set
+        return 3600  # 1 hour in seconds
+
+# -------------------------------------------------------------------------------------
 
 import numpy as np
 from typing import Callable
@@ -417,76 +497,4 @@ class IncrementalHSICLogger:
     def summary(self) -> str:
         return f"Incremental RFF-HSIC: N={self._n}, HSIC={self.hsic_score():.6f}"
 
-class _DurationCriterion:
-    def __init__(self, max_duration: float) -> None:
-        self._start = float("inf")
-        self._max_duration = max_duration
-
-    def __call__(self, optimizer: base.Optimizer) -> bool:
-        if np.isinf(self._start):
-            self._start = time.time()
-        return time.time() > self._start + self._max_duration
-
-
-class _LossImprovementToleranceCriterion:
-    def __init__(self, tolerance_window: int) -> None:
-        self._tolerance_window: int = tolerance_window
-        self._best_value: tp.Optional[np.ndarray] = None
-        self._tolerance_count: int = 0
-
-    def __call__(self, optimizer: base.Optimizer) -> bool:
-        best_param = optimizer.provide_recommendation()
-        if best_param is None or (best_param.loss is None and best_param._losses is None):
-            return False
-        best_last_losses = best_param.losses
-        if self._best_value is None:
-            self._best_value = best_last_losses
-            return False
-        if self._best_value <= best_last_losses:
-            self._tolerance_count += 1
-        else:
-            self._tolerance_count = 0
-            self._best_value = best_last_losses
-        return self._tolerance_count > self._tolerance_window
-
-
-import os
-import time
-import nevergrad as ng
-
-class SlurmStopping:
-    def __init__(self, threshold_seconds=300):
-        self.threshold = threshold_seconds
-        self.start_time = time.time()
-        self.job_start_time = self._get_slurm_start_time()
-        self.job_duration = self._get_slurm_duration()
-        self.job_end_time = self.job_start_time + self.job_duration
-
-    def __call__(self, optimizer):
-        current_time = time.time()
-        time_left = self.job_end_time - current_time
-        if time_left <= self.threshold:
-            print(f"[SlurmStopping] Less than {self.threshold} seconds remaining. Stopping optimization.")
-            raise ng.callbacks.OptimizationInterrupt("SLURM time limit approaching.")
-
-    def _get_slurm_start_time(self):
-        # Attempt to retrieve the SLURM job start time from environment variables
-        start_time_str = os.environ.get("SLURM_JOB_START_TIME")
-        if start_time_str:
-            try:
-                return float(start_time_str)
-            except ValueError:
-                pass
-        # Fallback to current time if not set
-        return self.start_time
-
-    def _get_slurm_duration(self):
-        # Attempt to retrieve the SLURM job duration from environment variables
-        duration_str = os.environ.get("SLURM_JOB_DURATION")
-        if duration_str:
-            try:
-                return float(duration_str)
-            except ValueError:
-                pass
-        # Fallback to a default duration (e.g., 1 hour) if not set
-        return 3600  # 1 hour in seconds
+# -------------------------------------------------------------------------------------
