@@ -446,16 +446,20 @@ class SlurmStopping:
 # -------------------------------------------------------------------------------------
 
 import time
+import logging
 import numpy as np
-from typing import Callable
+from typing import Callable, List
+from concurrent.futures import ThreadPoolExecutor, Future
 from nevergrad.optimization.base import Optimizer
 from nevergrad.parametrization.parameter import Parameter
 from nevergrad.common.typing import FloatLoss
 
+logger = logging.getLogger(__name__)
+
 class TimedCallback:
     def __init__(self, interval_sec: float = 60.0):
         self.interval_sec = interval_sec
-        self._last_time = 0.0
+        self._last_time = time.time()
 
     def should_run(self) -> bool:
         now = time.time()
@@ -465,10 +469,11 @@ class TimedCallback:
         return False
 
     def get_callback(self) -> Callable[[Optimizer, Parameter, FloatLoss], None]:
-        raise NotImplementedError("Subclasses must implement get_callback()")
+        raise NotImplementedError
+
 
 class HSICLoggerCallback(TimedCallback):
-    def __init__(self, kernel_dim: int = 100, sigma: float = 1.0, interval_sec: float = 60.0):
+    def __init__(self, kernel_dim=100, sigma=1.0, interval_sec=60.0):
         super().__init__(interval_sec)
         self.kernel_dim = kernel_dim
         self.sigma = sigma
@@ -476,55 +481,70 @@ class HSICLoggerCallback(TimedCallback):
         self._zy_mean = None
         self._c_xy = None
         self._n = 0
+        self._buffer: List[tuple[np.ndarray, float]] = []
+        self._rff_ready = False
         self.rff_weights_x = None
         self.rff_bias_x = None
         self.rff_weights_y = None
         self.rff_bias_y = None
+        self._executor = ThreadPoolExecutor(max_workers=1)
+        self._flush_future: Future = None
+
+    def __call__(self, optimizer, candidate, loss):
+        self.buffer_point(np.asarray(candidate.value), loss)
+        if self.should_run():
+            if self._flush_future and not self._flush_future.done():
+                logger.warning("Skipped HSIC flush: previous flush still in progress.")
+            else:
+                self._flush_future = self._executor.submit(self._flush_impl)
 
     def _init_rff(self, dim_x: int, dim_y: int):
         self.rff_weights_x = np.random.normal(0, 1.0 / self.sigma, (dim_x, self.kernel_dim))
         self.rff_bias_x = np.random.uniform(0, 2 * np.pi, self.kernel_dim)
         self.rff_weights_y = np.random.normal(0, 1.0 / self.sigma, (dim_y, self.kernel_dim))
         self.rff_bias_y = np.random.uniform(0, 2 * np.pi, self.kernel_dim)
+        self._rff_ready = True
 
     def _rff(self, x: np.ndarray, weights: np.ndarray, bias: np.ndarray) -> np.ndarray:
         return np.sqrt(2.0 / self.kernel_dim) * np.cos(x @ weights + bias)
 
-    def update(self, x: np.ndarray, y: float):
-        x = np.atleast_2d(x)
-        y = np.atleast_2d([[y]])
+    def buffer_point(self, x: np.ndarray, y: float):
+        self._buffer.append((x.copy(), float(y)))
 
-        if self.rff_weights_x is None:
-            self._init_rff(x.shape[1], y.shape[1])
+    def _flush_impl(self):
+        if not self._buffer:
+            return
 
-        zx = self._rff(x, self.rff_weights_x, self.rff_bias_x)
-        zy = self._rff(y, self.rff_weights_y, self.rff_bias_y)
+        x_all = np.array([x for x, _ in self._buffer])
+        y_all = np.array([[y] for _, y in self._buffer])
+        self._buffer.clear()
 
-        if self._n == 0:
-            self._zx_mean = zx.copy()
-            self._zy_mean = zy.copy()
-            self._c_xy = np.zeros((self.kernel_dim, self.kernel_dim))
-        else:
-            alpha = 1.0 / (self._n + 1)
-            self._zx_mean = (1 - alpha) * self._zx_mean + alpha * zx
-            self._zy_mean = (1 - alpha) * self._zy_mean + alpha * zy
-            dx = zx - self._zx_mean
-            dy = zy - self._zy_mean
-            self._c_xy = (1 - alpha) * self._c_xy + alpha * (dx.T @ dy)
+        if not self._rff_ready:
+            self._init_rff(x_all.shape[1], y_all.shape[1])
 
-        self._n += 1
+        zx_all = self._rff(x_all, self.rff_weights_x, self.rff_bias_x)
+        zy_all = self._rff(y_all, self.rff_weights_y, self.rff_bias_y)
+
+        for zx, zy in zip(zx_all, zy_all):
+            zx = zx.reshape(1, -1)
+            zy = zy.reshape(1, -1)
+            if self._n == 0:
+                self._zx_mean = zx.copy()
+                self._zy_mean = zy.copy()
+                self._c_xy = np.zeros((self.kernel_dim, self.kernel_dim))
+            else:
+                alpha = 1.0 / (self._n + 1)
+                self._zx_mean = (1 - alpha) * self._zx_mean + alpha * zx
+                self._zy_mean = (1 - alpha) * self._zy_mean + alpha * zy
+                dx = zx - self._zx_mean
+                dy = zy - self._zy_mean
+                self._c_xy = (1 - alpha) * self._c_xy + alpha * (dx.T @ dy)
+            self._n += 1
 
     def hsic_score(self) -> float:
         return float(np.sum(self._c_xy ** 2)) if self._c_xy is not None else 0.0
 
     def summary(self) -> str:
         return f"Incremental RFF-HSIC: N={self._n}, HSIC={self.hsic_score():.6f}"
-
-    def get_callback(self) -> Callable[[Optimizer, Parameter, FloatLoss], None]:
-        def callback(optimizer: Optimizer, candidate: Parameter, loss: FloatLoss) -> None:
-            if self.should_run():
-                x = np.asarray(candidate.value)
-                self.update(x, float(loss))
-        return callback
 
 # -------------------------------------------------------------------------------------
