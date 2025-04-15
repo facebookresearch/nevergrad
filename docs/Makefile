@@ -15,8 +15,8 @@ HAS_BASH      = $(shell command -v bash >/dev/null 2>&1 && echo YES || echo NO)
 HAS_PYTHON3   = $(shell command -v python3 >/dev/null 2>&1 && echo YES || echo NO)
 
 $(VENV):
-	@if [ "$(HAS_BASH)" == "NO" ] ; then echo "bash was not found at $(OSHELL)! Please use: $(MAKE) SHELL=/path/to/bash" 1>&2; exit 1; fi
-	@if [ "$(HAS_PYTHON3)" == "NO" ] ; then echo "python3 was not found! Please see README for further instructions" 1>&2; exit 1; fi
+	@if [ "$(HAS_BASH)" = "NO" ] ; then echo "bash was not found at $(OSHELL)! Please use: $(MAKE) SHELL=/path/to/bash" 1>&2; exit 1; fi
+	@if [ "$(HAS_PYTHON3)" = "NO" ] ; then echo "python3 was not found! Please see README for further instructions" 1>&2; exit 1; fi
 	@( \
 		$(PYTHON) -m venv $(VENV); \
 		. $(VENV)/bin/activate; \
@@ -29,7 +29,7 @@ $(VENV):
 html: $(VENV) conf.py
 	@(\
 		. $(VENV)/bin/activate ;\
-		$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O) ;\
+		PYTHONPATH=.. $(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O) ;\
 		deactivate ;\
 	)
 
@@ -37,9 +37,9 @@ html: $(VENV) conf.py
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-.PHONY: help Makefile
+clean:
+	@echo "Removing all generated documentation and virtualenv..."
+	@rm -rf "$(BUILDDIR)" .doctrees .coverage htmlcov *.pyc *.pyo __pycache__
 
-# Catch-all target: route all unknown targets to Sphinx using the new
-# "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-#%: Makefile
-#	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+.PHONY: help html clean
+
