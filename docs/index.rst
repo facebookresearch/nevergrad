@@ -81,8 +81,13 @@ Learn more about parametrization in the :ref:`Parametrization section <parametri
    examples/diversity/Diversity in image generation with Nevergrad.md
    examples/lognormal/Lognormal mutations in Nevergrad.md
    examples/retrofitting/Retrofitting with Nevergrad.md
-   statistics/AgStatistics.md
+
+.. toctree::
+   :maxdepth: 3
+   :caption: STATISTICS
+
    statistics/Statistics.md
+   statistics/AgStatistics.md
 
 Citing
 ------
