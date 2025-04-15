@@ -310,8 +310,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         ----------
         x: np.ndarray
             point where the function was evaluated
-        loss: float/list/np.ndarray
-            loss of the function (or multi-objective function
+        loss: float or list or np.ndarray
+            loss of the function (or multi-objective function)
         constraint_violation: float/list/np.ndarray/None
             constraint violation (> 0 means that this is not correct)
         penalty_style: ArrayLike/None
