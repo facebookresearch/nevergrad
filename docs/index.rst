@@ -65,8 +65,9 @@ Learn more about parametrization in the :ref:`Parametrization section <parametri
    :maxdepth: 3
    :caption: API REFERENCE
 
-   optimizers_ref.rst
-   parametrization_ref.rst
+   ref_optimizer.rst
+   ref_parametrization.rst
+   ref_callbacks.rst
 
 
 .. toctree::
@@ -82,12 +83,14 @@ Learn more about parametrization in the :ref:`Parametrization section <parametri
    examples/lognormal/Lognormal mutations in Nevergrad.md
    examples/retrofitting/Retrofitting with Nevergrad.md
 
+
 .. toctree::
    :maxdepth: 3
    :caption: STATISTICS
 
    statistics/Statistics.md
    statistics/AgStatistics.md
+
 
 Citing
 ------
