@@ -392,45 +392,55 @@ class _LossImprovementToleranceCriterion:
 # -------------------------------------------------------------------------------------
 
 import os
+import subprocess
 import time
 
 class SlurmStopping:
-    def __init__(self, threshold_seconds=300):
+    def __init__(self, threshold_seconds: int = 300):
         self.threshold = threshold_seconds
-        self.start_time = time.time()
-        self.job_start_time = self._get_slurm_start_time()
-        self.job_duration = self._get_slurm_duration()
+        self.job_start_time, self.job_duration = self._get_slurm_times()
         self.job_end_time = self.job_start_time + self.job_duration
 
-    def __call__(self, optimizer):
+    def __call__(self, *args, **kwargs):
         if args or kwargs:
             raise errors.NevergradRuntimeError("SlurmStopping must be registered on ask method")
-        time_left = self.job_end_time - current_time
+        time_left = self.job_end_time - time.time()
         if time_left <= self.threshold:
             raise errors.NevergradEarlyStopping(f"SLURM timeout: {self.threshold} seconds remaining. Stopping optimization.")
 
-    def _get_slurm_start_time(self):
-        # Attempt to retrieve the SLURM job start time from environment variables
-        start_time_str = os.environ.get("SLURM_JOB_START_TIME")
-        if start_time_str:
-            try:
-                return float(start_time_str)
-            except ValueError:
-                pass
-        # Fallback to current time if not set
-        return self.start_time
+    def _get_slurm_times(self):
+        job_id = os.environ.get("SLURM_JOB_ID")
+        if not job_id:
+            raise errors.NevergradRuntimeError("Not running inside a SLURM job")
 
-    def _get_slurm_duration(self):
-        # Attempt to retrieve the SLURM job duration from environment variables
-        duration_str = os.environ.get("SLURM_JOB_DURATION")
-        if duration_str:
-            try:
-                return float(duration_str)
-            except ValueError:
-                pass
-        # Fallback to a default duration (e.g., 1 hour) if not set
-        return 3600  # 1 hour in seconds
+        try:
+            out = subprocess.check_output(["scontrol", "show", "job", job_id], encoding="utf-8")
+        except Exception as e:
+            raise errors.NevergradRuntimeError(f"scontrol failed: {e}")
 
+        start_timestamp = None
+        time_limit_sec = None
+        for line in out.splitlines():
+            if "StartTime=" in line:
+                # e.g. StartTime=2025-04-15T02:30:00
+                for field in line.strip().split():
+                    if field.startswith("StartTime="):
+                        start_str = field.split("=")[1]
+                        if start_str == "Unknown":
+                            start_timestamp = time.time()
+                        else:
+                            start_timestamp = time.mktime(time.strptime(start_str, "%Y-%m-%dT%H:%M:%S"))
+            if "TimeLimit=" in line:
+                for field in line.strip().split():
+                    if field.startswith("TimeLimit="):
+                        limit_str = field.split("=")[1]  # e.g. "01:00:00"
+                        h, m, s = map(int, limit_str.split(":"))
+                        time_limit_sec = h * 3600 + m * 60 + s
+
+        if start_timestamp is None or time_limit_sec is None:
+            raise errors.NevergradRuntimeError("Failed to extract StartTime or TimeLimit from scontrol")
+
+        return start_timestamp, time_limit_sec
 # -------------------------------------------------------------------------------------
 
 import numpy as np
