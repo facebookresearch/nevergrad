@@ -39,7 +39,7 @@ extensions = [
     "sphinx.ext.coverage",
     "sphinx.ext.napoleon",
     "sphinx.ext.autosummary",
-    "recommonmark",
+    "myst_parser",
 ]
 
 source_suffix = {
