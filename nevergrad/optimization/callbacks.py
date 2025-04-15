@@ -450,3 +450,43 @@ class _LossImprovementToleranceCriterion:
         return self._tolerance_count > self._tolerance_window
 
 
+import os
+import time
+import nevergrad as ng
+
+class SlurmStopping:
+    def __init__(self, threshold_seconds=300):
+        self.threshold = threshold_seconds
+        self.start_time = time.time()
+        self.job_start_time = self._get_slurm_start_time()
+        self.job_duration = self._get_slurm_duration()
+        self.job_end_time = self.job_start_time + self.job_duration
+
+    def __call__(self, optimizer):
+        current_time = time.time()
+        time_left = self.job_end_time - current_time
+        if time_left <= self.threshold:
+            print(f"[SlurmStopping] Less than {self.threshold} seconds remaining. Stopping optimization.")
+            raise ng.callbacks.OptimizationInterrupt("SLURM time limit approaching.")
+
+    def _get_slurm_start_time(self):
+        # Attempt to retrieve the SLURM job start time from environment variables
+        start_time_str = os.environ.get("SLURM_JOB_START_TIME")
+        if start_time_str:
+            try:
+                return float(start_time_str)
+            except ValueError:
+                pass
+        # Fallback to current time if not set
+        return self.start_time
+
+    def _get_slurm_duration(self):
+        # Attempt to retrieve the SLURM job duration from environment variables
+        duration_str = os.environ.get("SLURM_JOB_DURATION")
+        if duration_str:
+            try:
+                return float(duration_str)
+            except ValueError:
+                pass
+        # Fallback to a default duration (e.g., 1 hour) if not set
+        return 3600  # 1 hour in seconds
