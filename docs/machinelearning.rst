@@ -1,7 +1,7 @@
 .. _machinelearning:
 
-Examples - Nevergrad for machine learning
-=========================================
+Nevergrad for machine learning
+==============================
 
 Let us assume that you have defined an objective function as in:
 
