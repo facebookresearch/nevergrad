@@ -50,21 +50,34 @@ Learn more about parametrization in the :ref:`Parametrization section <parametri
 
 .. toctree::
    :maxdepth: 3
-   :caption: Contents
+   :caption: CONTENTS
 
    getting_started.rst
    optimization.rst
    parametrization.rst
-   machinelearning.rst
-   optimizers_ref.rst
-   parametrization_ref.rst
    benchmarking.rst
-   r.rst
-   benchmarks.rst
-   pyomo.rst
    windows.md
    contributing.rst
    opencompetition2020.md
+
+
+.. toctree::
+   :maxdepth: 3
+   :caption: API REFERENCE
+
+   optimizers_ref.rst
+   parametrization_ref.rst
+
+
+.. toctree::
+   :maxdepth: 3
+   :caption: EXAMPLES
+
+   machinelearning.rst
+   r.rst
+   benchmarks.rst
+   pyomo.rst
+
 
 
 Citing
