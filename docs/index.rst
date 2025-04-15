@@ -53,10 +53,10 @@ Learn more about parametrization in the :ref:`Parametrization section <parametri
    :caption: CONTENTS
 
    getting_started.rst
+   windows.md
    optimization.rst
    parametrization.rst
    benchmarking.rst
-   windows.md
    contributing.rst
    opencompetition2020.md
 
