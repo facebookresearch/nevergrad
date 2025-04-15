@@ -44,7 +44,6 @@ extensions = [
 
 source_suffix = {
     ".rst": "restructuredtext",
-    ".txt": "markdown",
     ".md": "markdown",
 }
 
@@ -58,6 +57,7 @@ templates_path = []
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
+autodoc_mock_imports = ["cv2", "torch", "torchvision", "matplotlib", "pyproj", "gym"]
 
 # -- Options for HTML output -------------------------------------------------
 
