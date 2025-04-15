@@ -1,3 +1,6 @@
+
+# Lognormal mutations in Nevergrad
+
 We present a family of black-box optimization algorithms recently added in Nevergrad. We explain how they can be used for improving fake detection algorithms.
 ## Lognormal algorithm
 
