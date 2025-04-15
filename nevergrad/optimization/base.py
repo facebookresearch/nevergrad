@@ -312,12 +312,12 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
             point where the function was evaluated
         loss: float or list or np.ndarray
             loss of the function (or multi-objective function)
-        constraint_violation: float/list/np.ndarray/None
+        constraint_violation: float or list or np.ndarray or None
             constraint violation (> 0 means that this is not correct)
-        penalty_style: ArrayLike/None
+        penalty_style: ArrayLike or None
             to be read as [a,b,c,d,e,f]
             with cv the constraint violation vector (above):
-            penalty = (a + sum(|loss|)) * (f+num_tell)**e * (b * sum(cv**c)) ** d
+            penalty = (a + sum(`|loss|`)) * (f+num_tell)**e * (b * sum(cv**c)) ** d
             default: [1e5, 1., .5, 1., .5, 1.]
 
         Note
