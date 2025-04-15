@@ -407,10 +407,9 @@ class SlurmStopping:
             raise errors.NevergradRuntimeError("SlurmStopping must be registered on ask method")
         time_left = self.job_end_time - time.time()
         if time_left <= self.threshold:
-            raise errors.NevergradEarlyStopping(f"SLURM timeout: {self.threshold} seconds remaining. Stopping optimization.")
+            raise errors.NevergradEarlyStopping(f"SLURM timeout in {self.threshold} seconds, stopping optimization.")
 
     def _get_slurm_times(self):
-
         job_id = os.environ.get("SLURM_JOB_ID")
         if not job_id:
             warnings.warn("SlurmStopping is a no-op: not running inside a SLURM job.", RuntimeWarning)
@@ -443,6 +442,7 @@ class SlurmStopping:
             raise errors.NevergradRuntimeError("Failed to extract StartTime or TimeLimit from scontrol")
 
         return start_timestamp, time_limit_sec
+
 # -------------------------------------------------------------------------------------
 
 import numpy as np
