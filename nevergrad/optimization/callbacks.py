@@ -352,6 +352,70 @@ class EarlyStopping:
         """Early stop when loss didn't reduce during tolerance_window asks"""
         return cls(_LossImprovementToleranceCriterion(tolerance_window))
 
+import numpy as np
+from typing import Callable
+from nevergrad.optimization.base import Optimizer
+from nevergrad.common.typing import FloatLoss
+from nevergrad.parametrization.parameter import Parameter
+
+class IncrementalHSICLogger:
+    def __init__(self, kernel_dim: int = 100, sigma: float = 1.0):
+        self.kernel_dim = kernel_dim
+        self.sigma = sigma
+        self._zx_mean = None
+        self._zy_mean = None
+        self._c_xy = None
+        self._n = 0
+        self.rff_weights_x = None
+        self.rff_bias_x = None
+        self.rff_weights_y = None
+        self.rff_bias_y = None
+
+    def _init_rff(self, dim_x: int, dim_y: int):
+        self.rff_weights_x = np.random.normal(0, 1.0 / self.sigma, (dim_x, self.kernel_dim))
+        self.rff_bias_x = np.random.uniform(0, 2 * np.pi, self.kernel_dim)
+        self.rff_weights_y = np.random.normal(0, 1.0 / self.sigma, (dim_y, self.kernel_dim))
+        self.rff_bias_y = np.random.uniform(0, 2 * np.pi, self.kernel_dim)
+
+    def _rff(self, x: np.ndarray, weights: np.ndarray, bias: np.ndarray) -> np.ndarray:
+        proj = x @ weights + bias
+        return np.sqrt(2.0 / self.kernel_dim) * np.cos(proj)
+
+    def update(self, x: np.ndarray, y: float):
+        x = np.atleast_2d(x)
+        y = np.atleast_2d([[y]])
+
+        if self.rff_weights_x is None:
+            self._init_rff(x.shape[1], y.shape[1])
+
+        zx = self._rff(x, self.rff_weights_x, self.rff_bias_x)
+        zy = self._rff(y, self.rff_weights_y, self.rff_bias_y)
+
+        if self._n == 0:
+            self._zx_mean = zx.copy()
+            self._zy_mean = zy.copy()
+            self._c_xy = np.zeros((self.kernel_dim, self.kernel_dim))
+        else:
+            alpha = 1.0 / (self._n + 1)
+            self._zx_mean = (1 - alpha) * self._zx_mean + alpha * zx
+            self._zy_mean = (1 - alpha) * self._zy_mean + alpha * zy
+            dx = zx - self._zx_mean
+            dy = zy - self._zy_mean
+            self._c_xy = (1 - alpha) * self._c_xy + alpha * (dx.T @ dy)
+
+        self._n += 1
+
+    def hsic_score(self) -> float:
+        return float(np.sum(self._c_xy ** 2)) if self._c_xy is not None else 0.0
+
+    def get_callback(self) -> Callable[[Optimizer, Parameter, FloatLoss], None]:
+        def callback(optimizer: Optimizer, candidate: Parameter, loss: FloatLoss) -> None:
+            x = np.asarray(candidate.value)
+            self.update(x, float(loss))
+        return callback
+
+    def summary(self) -> str:
+        return f"Incremental RFF-HSIC: N={self._n}, HSIC={self.hsic_score():.6f}"
 
 class _DurationCriterion:
     def __init__(self, max_duration: float) -> None:
@@ -384,3 +448,5 @@ class _LossImprovementToleranceCriterion:
             self._tolerance_count = 0
             self._best_value = best_last_losses
         return self._tolerance_count > self._tolerance_window
+
+
