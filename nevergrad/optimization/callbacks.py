@@ -394,6 +394,7 @@ class _LossImprovementToleranceCriterion:
 import os
 import subprocess
 import time
+import warnings
 
 class SlurmStopping:
     def __init__(self, threshold_seconds: int = 300):
@@ -409,9 +410,10 @@ class SlurmStopping:
             raise errors.NevergradEarlyStopping(f"SLURM timeout: {self.threshold} seconds remaining. Stopping optimization.")
 
     def _get_slurm_times(self):
+
         job_id = os.environ.get("SLURM_JOB_ID")
         if not job_id:
-            raise errors.NevergradRuntimeError("Not running inside a SLURM job")
+            warnings.warn("SlurmStopping is a no-op: not running inside a SLURM job.", RuntimeWarning)
 
         try:
             out = subprocess.check_output(["scontrol", "show", "job", job_id], encoding="utf-8")
