@@ -403,7 +403,8 @@ class SlurmStopping:
         self.job_end_time = self.job_start_time + self.job_duration
 
     def __call__(self, optimizer):
-        current_time = time.time()
+        if args or kwargs:
+            raise errors.NevergradRuntimeError("SlurmStopping must be registered on ask method")
         time_left = self.job_end_time - current_time
         if time_left <= self.threshold:
             raise errors.NevergradEarlyStopping(f"SLURM timeout: {self.threshold} seconds remaining. Stopping optimization.")
