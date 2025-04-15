@@ -445,14 +445,31 @@ class SlurmStopping:
 
 # -------------------------------------------------------------------------------------
 
+import time
 import numpy as np
 from typing import Callable
 from nevergrad.optimization.base import Optimizer
-from nevergrad.common.typing import FloatLoss
 from nevergrad.parametrization.parameter import Parameter
+from nevergrad.common.typing import FloatLoss
 
-class IncrementalHSICLogger:
-    def __init__(self, kernel_dim: int = 100, sigma: float = 1.0):
+class TimedCallback:
+    def __init__(self, interval_sec: float = 60.0):
+        self.interval_sec = interval_sec
+        self._last_time = 0.0
+
+    def should_run(self) -> bool:
+        now = time.time()
+        if now - self._last_time >= self.interval_sec:
+            self._last_time = now
+            return True
+        return False
+
+    def get_callback(self) -> Callable[[Optimizer, Parameter, FloatLoss], None]:
+        raise NotImplementedError("Subclasses must implement get_callback()")
+
+class HSICLoggerCallback(TimedCallback):
+    def __init__(self, kernel_dim: int = 100, sigma: float = 1.0, interval_sec: float = 60.0):
+        super().__init__(interval_sec)
         self.kernel_dim = kernel_dim
         self.sigma = sigma
         self._zx_mean = None
@@ -471,8 +488,7 @@ class IncrementalHSICLogger:
         self.rff_bias_y = np.random.uniform(0, 2 * np.pi, self.kernel_dim)
 
     def _rff(self, x: np.ndarray, weights: np.ndarray, bias: np.ndarray) -> np.ndarray:
-        proj = x @ weights + bias
-        return np.sqrt(2.0 / self.kernel_dim) * np.cos(proj)
+        return np.sqrt(2.0 / self.kernel_dim) * np.cos(x @ weights + bias)
 
     def update(self, x: np.ndarray, y: float):
         x = np.atleast_2d(x)
@@ -501,13 +517,14 @@ class IncrementalHSICLogger:
     def hsic_score(self) -> float:
         return float(np.sum(self._c_xy ** 2)) if self._c_xy is not None else 0.0
 
-    def get_callback(self) -> Callable[[Optimizer, Parameter, FloatLoss], None]:
-        def callback(optimizer: Optimizer, candidate: Parameter, loss: FloatLoss) -> None:
-            x = np.asarray(candidate.value)
-            self.update(x, float(loss))
-        return callback
-
     def summary(self) -> str:
         return f"Incremental RFF-HSIC: N={self._n}, HSIC={self.hsic_score():.6f}"
+
+    def get_callback(self) -> Callable[[Optimizer, Parameter, FloatLoss], None]:
+        def callback(optimizer: Optimizer, candidate: Parameter, loss: FloatLoss) -> None:
+            if self.should_run():
+                x = np.asarray(candidate.value)
+                self.update(x, float(loss))
+        return callback
 
 # -------------------------------------------------------------------------------------
