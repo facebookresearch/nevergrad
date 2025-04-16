@@ -473,7 +473,7 @@ class TimedCallback:
 
 
 class HSICLoggerCallback(TimedCallback):
-    def __init__(self, kernel_dim=100, sigma=1.0, interval_sec=60.0):
+    def __init__(self, parameter_names: tp.Optional[tp.List[str]] = None, kernel_dim=100, sigma=1.0, interval_sec=60.0):
         super().__init__(interval_sec)
         self.kernel_dim = kernel_dim
         self.sigma = sigma
@@ -540,6 +540,8 @@ class HSICLoggerCallback(TimedCallback):
                 dy = zy - self._zy_mean
                 self._c_xy = (1 - alpha) * self._c_xy + alpha * (dx.T @ dy)
             self._n += 1
+
+        print(self.summary())
 
     def hsic_score(self) -> float:
         return float(np.sum(self._c_xy ** 2)) if self._c_xy is not None else 0.0
