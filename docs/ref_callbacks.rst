@@ -1,5 +1,6 @@
-Callbacks API
-=============
+
+Callbacks API (ng.callbacks)
+============================
 
 .. _callbacks:
 
