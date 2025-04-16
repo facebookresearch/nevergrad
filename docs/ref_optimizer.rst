@@ -1,5 +1,7 @@
-Optimizer API
-=============
+
+Optimization API (ng.optimizers)
+================================
+
 
 All the optimizers share the following common API:
 
