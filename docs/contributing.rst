@@ -33,7 +33,7 @@ To install ``nevergrad`` in development mode (if you wish to contribute to it):
 
     .. note::
 
-        If the install fails due to `torch`, install it manually following the instructions at https://pytorch.org/get-started/locally/
+        If the install fails due to ``torch``, install it manually following the instructions at https://pytorch.org/get-started/locally/
 
     - Create a Feature Branch (easier with Github Desktop application)
 
@@ -63,7 +63,7 @@ To install ``nevergrad`` in development mode (if you wish to contribute to it):
           git commit -m "Add feature XYZ to module ABC"
           git push origin feature/my-awesome-contribution
 
-    - Open a Pull Request on github.com. *Make sure the base is `facebookresearch/nevergrad:main` and the compare branch is your feature branch.*
+    - Open a Pull Request on github.com. **Make sure the base is ``facebookresearch/nevergrad:main`` and the compare branch is your feature branch.**
 
     - Stay in sync with upstream (easier with github.com and Github Desktop application)
 
