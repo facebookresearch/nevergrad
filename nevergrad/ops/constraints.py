@@ -92,3 +92,40 @@ class Constraint(core.Operator):
         root.set_standardized_data(np.zeros(root.dimension), reference=recom)
         self._cache = recom.value
         return self._cache
+
+# -------------------------------------------------------------------------------------
+
+class BisectionProjectionConstraint(Constraint):
+    def __init__(self, is_feasible, lb, ub, max_iter=50, tol=1e-8):
+        super().__init__()
+        self.is_feasible = is_feasible
+        self.lb = np.array(lb)
+        self.ub = np.array(ub)
+        self.max_iter = max_iter
+        self.tol = tol
+
+    def apply(self, param):
+        x = np.clip(np.asarray(param.value), self.lb, self.ub)
+        if self.is_feasible(x):
+            param.value = x
+            return param
+        # find a feasible reference point xf
+        for _ in range(100):
+            xf = self.lb + np.random.rand(*x.shape) * (self.ub - self.lb)
+            if self.is_feasible(xf):
+                break
+        else:
+            raise ValueError("Could not find feasible reference point for bisection projection")
+        # bisection between x and xf
+        lo, hi = 0.0, 1.0
+        for _ in range(self.max_iter):
+            mid = (lo + hi) / 2.0
+            xmid = np.clip(mid * x + (1 - mid) * xf, self.lb, self.ub)
+            if self.is_feasible(xmid):
+                hi = mid
+            else:
+                lo = mid
+            if hi - lo < self.tol:
+                break
+        param.value = np.clip(mid * x + (1 - mid) * xf, self.lb, self.ub)
+        return param
