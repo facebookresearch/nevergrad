@@ -1,16 +1,19 @@
 .. _parametrization_ref:
 
-Parametrization API reference
-=============================
+Parametrization API
+===================
 
-**Please note that parametrization is still a work in progress and changes are on their way (including for this documentation)! We are trying to update it to make it simpler and simpler to use (all feedbacks are welcome ;) ), with the side effect that there will be breaking changes.**
+.. note::
 
-The aim of parametrization is to specify what are the parameters that the optimization should be performed upon.
-The parametrization subpackage will help you do thanks to:
+  Please note that parametrization is still a work in progress and changes are on their way including for this documentation ! We are trying to update it to make it simpler and simpler to use with the side effect that there will be breaking changes. All feedback is welcome.
+
+The aim of parametrization is to specify what are the parameters that the optimization should be performed upon. The parametrization subpackage will help you do thanks to:
 
 - the `parameter` modules (accessed by the shortcut `nevergrad.p`) providing classes that should be used to specify each parameter.
+
 - the `ops` module (accessed through `ng.ops`) providing experimental objects for modifying a parameter behavior (eg: casting to int, adding complex constraints).
-- the `FolderFunction` which helps transform any code into a Python function in a few lines. This can be especially helpful to optimize parameters in non-Python 3.6+ code (C++, Octave, etc...) or parameters in scripts.
+
+- the `FolderFunction` which helps transform any code into a Python function in a few lines. This can be especially helpful to optimize parameters in non-Python 3.6+ code (C++, Octave, ...) or parameters in scripts.
 
 
 Parameters
