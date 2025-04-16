@@ -1,7 +1,8 @@
-.. _parametrization_ref:
 
-Parametrization API
-===================
+Parametrization API (ng.p)
+==========================
+
+.. _parametrization_ref:
 
 .. note::
 
@@ -46,10 +47,8 @@ Parameter API
 
 Operators
 ---------
-These experimental operators are designed to be instantiated and called with a parameter as input, creating a new parameter with the required behavior.
+
+*Operators* are designed to be instantiated and called with a parameter as input, creating a new parameter with the required behavior. *Constraints* are implemented as operators.
 
 .. automodule:: nevergrad.ops
-    :members: Int
-
-
-
+    :members: Int, Constraint, BisectionProjectionConstraint
