@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "nevergrad"
-copyright = "2019, Facebook AI Research"  # pylint: disable=redefined-builtin
+copyright = "[2019, ∞), Facebook AI Research"  # pylint: disable=redefined-builtin
 author = "Facebook AI Research"
 
 
