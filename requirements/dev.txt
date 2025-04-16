@@ -6,11 +6,7 @@ pylint>=2.4.4
 wheel>=0.33.6
 setuptools==70.0.0
 #setuptools>=41.2.0
-sphinx>=3.3.0
-sphinx_rtd_theme>=0.4.3
-recommonmark>=0.5.0
 twine>=3.1.1  # for upload to pypi
-autodocsumm>=0.1.11
 pandas>=0.23.4
 pyparsing>=2.2.1  # temporarily fixed to avoid incompatibilities (to be removed)
 docutils==0.17.1  # 0.18 is buggy
