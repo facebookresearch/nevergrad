@@ -56,6 +56,7 @@ Learn more about parametrization in the :ref:`Parametrization section <parametri
    windows.md
    optimization.rst
    parametrization.rst
+   constraints.rst
    benchmarking.rst
    contributing.rst
    opencompetition2020.md
