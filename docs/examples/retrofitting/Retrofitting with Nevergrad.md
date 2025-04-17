@@ -1,5 +1,5 @@
 
-# Retrofitting with Nevergrad <span style="background:#e91e63;color:white;border-radius:4px;padding:2px 6px;font-size:0.75em;">NEW</span>
+# Retrofitting with Nevergrad {bdg-info}`NEW`
 
 Comments welcome here: https://www.facebook.com/groups/nevergradusers/
 ## What is retrofitting ?
