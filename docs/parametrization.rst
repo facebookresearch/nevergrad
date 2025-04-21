@@ -68,35 +68,32 @@ Parameters
 
 7 types of parameters are currently provided:
 
-- :code:`Choice(items)`: describes a parameter which can take values within the provided list of (usually unordered categorical) items, and for which transitions are global (from one item to any other item). The returned element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic and makes the function evaluation noisy.
-- :code:`TransitionChoice(items)`: describes a parameter which can take values within the provided list of (usually ordered) items, and for which transitions are local (from one item to close items).
 - :code:`Array(shape=shape)`: describes a :code:`np.ndarray` of any shape. The bounds of the array and the mutation of this array can be specified (see :code:`set_bounds`, :code:`set_mutation`). This makes it a very flexible type of parameter. Eg. :code:`Array(shape=(2, 3)).set_bounds(0, 2)` encodes for an array of shape :code:`(2, 3)`, with values bounded between 0 and 2. It can be also set to an array of integers (see :code:`set_integer_casting`)
-- :code:`Scalar()`: describes a scalar. This parameter inherits from all :code:`Array` methods, so it can be bounded, projected to integers and mutation rate can be customized.
+- :code:`Choice(items)`: describes a parameter which can take values within the provided list of (usually unordered categorical) items, and for which transitions are global (from one item to any other item). The returned element will be sampled as the softmax of the values on these dimensions. Be cautious: this process is non-deterministic and makes the function evaluation noisy.
+- :code:`Dict(items)`: FIXME.
+- :code:`Instrumentation(*args, **kwargs)`: a container for other parameters. Values of parameters in the :code:`args` will be returned as a :code:`tuple` by :code:`param.args`, and values of parameters in the :code:`kwargs` will be returned as a :code:`dict` by :code:`param.kwargs` (in practice, :code:`param.value == (param.args, param.kwargs)`). This serves to parametrize functions taking multiple arguments, since you can then call the function with :code:`func(*param.args, **param.kwargs)`.
 - :code:`Log(lower, upper)`: describes log distributed data between two bounds. Under the hood this uses an :code:`Scalar` with appropriate specifications for bounds and mutations.
-- :code:`Instrumentation(*args, **kwargs)`: a container for other parameters. Values of parameters in the :code:`args` will be returned as a :code:`tuple` by :code:`param.args`, and
-  values of parameters in the :code:`kwargs` will be returned as a :code:`dict` by :code:`param.kwargs` (in practice, :code:`param.value == (param.args, param.kwargs)`).
-  This serves to parametrize functions taking multiple arguments, since you can then call the function with :code:`func(*param.args, **param.kwargs)`.
+- :code:`Scalar()`: describes a scalar. This parameter inherits from all :code:`Array` methods, so it can be bounded, projected to integers and mutation rate can be customized.
+- :code:`TransitionChoice(items)`: describes a parameter which can take values within the provided list of (usually ordered) items, and for which transitions are local (from one item to close items).
 
 
 Follow the link to the API reference for more details and initialization options:
 
 .. autosummary::
     nevergrad.p.Array
-    nevergrad.p.Scalar
-    nevergrad.p.Log
-    nevergrad.p.Dict
-    nevergrad.p.Tuple
-    nevergrad.p.Instrumentation
     nevergrad.p.Choice
+    nevergrad.p.Dict
+    nevergrad.p.Instrumentation
+    nevergrad.p.Log
+    nevergrad.p.Scalar
     nevergrad.p.TransitionChoice
+    nevergrad.p.Tuple
 
 
 Parametrization
 ---------------
 
-Parametrization helps you define the parameters you want to optimize upon.
-Currently most algorithms make use of it to help convert the parameters into the "standardized data" space (a vector space spanning all the real values),
-where it is easier to define operations.
+Parametrization helps you define the parameters you want to optimize upon. Currently most algorithms make use of it to help convert the parameters into the "standardized data" space (a vector space spanning all the real values), where it is easier to define operations.
 
 Let's define the parametrization for a function taking 3 positional arguments and one keyword argument :code:`value`.
 
@@ -167,10 +164,9 @@ We provide tooling for this situation but this is hacky, so if you can avoid it,
 - **parametrize** the function (see Parametrization section just above).
 
 
-Tips and caveats
-^^^^^^^^^^^^^^^^
+.. note::
 
- - using :code:`FolderFunction` argument :code:`clean_copy=True` will copy your folder so that tempering with it during optimization will run different versions of your code.
- - under the hood, with or without :code:`clean_copy=True`, when calling the function, :code:`FolderFunction` will create symlink copy of the initial folder, remove the files that have tokens, and create new ones with appropriate values. Symlinks are used in order to avoid duplicating large projects, but they have some drawbacks, see next point ;)
- - one can add a compilation step to :code:`FolderFunction` (the compilation just has to be included in the script). However, be extra careful that if the initial folder contains some build files, they could be modified by the compilation step, because of the symlinks. Make sure that during compilation, you remove the build symlinks first! **This feature has not been fool proofed yet!!!**
- - the following external file types are registered by default: :code:`[".c", ".h", ".cpp", ".hpp", ".py", ".m"]`. Custom file types can be registered using :code:`FolderFunction.register_file_type` by providing the relevant file suffix as well as the characters that indicate a comment. However, for now, parameters which provide a vector or values (:code:`Array`) will inject code with a Python format (list) by default, which may not be suitable.
+    - using :code:`FolderFunction` argument :code:`clean_copy=True` will copy your folder so that tempering with it during optimization will run different versions of your code.
+    - under the hood, with or without :code:`clean_copy=True`, when calling the function, :code:`FolderFunction` will create symlink copy of the initial folder, remove the files that have tokens, and create new ones with appropriate values. Symlinks are used in order to avoid duplicating large projects, but they have some drawbacks, see next point ;)
+    - one can add a compilation step to :code:`FolderFunction` (the compilation just has to be included in the script). However, be extra careful that if the initial folder contains some build files, they could be modified by the compilation step, because of the symlinks. Make sure that during compilation, you remove the build symlinks first! **This feature has not been fool proofed yet!!!**
+    - the following external file types are registered by default: :code:`[".c", ".h", ".cpp", ".hpp", ".py", ".m"]`. Custom file types can be registered using :code:`FolderFunction.register_file_type` by providing the relevant file suffix as well as the characters that indicate a comment. However, for now, parameters which provide a vector or values (:code:`Array`) will inject code with a Python format (list) by default, which may not be suitable.
