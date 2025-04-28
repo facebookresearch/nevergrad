@@ -19,6 +19,27 @@ skip_win_perf = pytest.mark.skipif(
 
 
 @skip_win_perf  # type: ignore
+def test_fasttabu() -> None:
+    d = 3
+    for opt_name in [
+        "DiscreteOnePlusOneT",
+        "PortfolioDiscreteOnePlusOneT",
+        "SADiscreteLenglerOnePlusOneLinAuto",
+    ]:
+        instru = ng.p.Array(shape=(d,), lower=0, upper=1.0).set_integer_casting()
+        b = 2**d
+        optim = ng.optimizers.registry[opt_name](instru, b)
+        path = []
+        for i in range(b):
+            x = optim.ask()
+            optim.tell(x, 0.0)
+            path += [x.value]
+        for k in range(len(path) - 1):
+            for kk in range(k + 1, len(path)):
+                assert np.sum((path[k] - path[kk]) ** 2) > 0.1, f"{opt_name} fails in dim {d}."
+
+
+@skip_win_perf  # type: ignore
 def no_test_tabu() -> None:
 
     num_tests = 97
