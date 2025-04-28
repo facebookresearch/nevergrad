@@ -156,6 +156,14 @@ def check_experiment(maker: tp.Any, short: bool = False, skip_seed: bool = False
             )
             for xp in xps
         ]
+        # Check stochasticity.
+        func = simplified[0].function.copy()
+        v = func.parametrization.sample().value
+        values = [func(v) for _ in range(3)]
+        assert (
+            all([np.array_equal(v, values[0]) for v in values]) == func.parametrization.function.deterministic
+        ), f"{type(values[0])}: min={min(values)}, max={max(values)}, det={func.parametrization.function.deterministic}"
+
         # compute in any order
         np.random.shuffle(simplified)  # type: ignore
         selector = Selector(data=[xp.run() for xp in simplified])
