@@ -277,7 +277,7 @@ class Data(core.Parameter):
                 ) from e
         return self
 
-    def set_integer_casting(self: D) -> D:
+    def set_integer_casting(self: D, no_action=False) -> D:
         """Output will be cast to integer(s) through deterministic rounding.
 
         Returns
@@ -290,6 +290,8 @@ class Data(core.Parameter):
         difficult. It is especially ill-advised to use this with a range smaller than 10, or
         a sigma lower than 1. In those cases, you should rather use a TransitionChoice instead.
         """
+        if no_action:
+            return self
         return self.add_layer(_layering.Int())
 
     @property
