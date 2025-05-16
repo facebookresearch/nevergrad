@@ -19,6 +19,7 @@ from . import base
 
 global_logger = logging.getLogger(__name__)
 
+# -------------------------------------------------------------------------------------
 
 class OptimizationPrinter:
     """Printer to register as callback in an optimizer, for printing
@@ -47,6 +48,7 @@ class OptimizationPrinter:
             x = optimizer.provide_recommendation()
             print(f"After {optimizer.num_tell}, recommendation is {x}")  # TODO fetch value
 
+# -------------------------------------------------------------------------------------
 
 class OptimizationLogger:
     """Logger to register as callback in an optimizer, for Logging
@@ -97,6 +99,7 @@ class OptimizationLogger:
                     losses,
                 )
 
+# -------------------------------------------------------------------------------------
 
 class ParametersLogger:
     """Logs parameter and run information throughout into a file during
@@ -257,6 +260,7 @@ class ParametersLogger:
         exp.display_data(hip.Displays.XY).update({"lines_thickness": 1.0, "lines_opacity": 1.0})
         return exp
 
+# -------------------------------------------------------------------------------------
 
 class OptimizerDump:
     """Dumps the optimizer to a pickle file at every call.
@@ -273,6 +277,7 @@ class OptimizerDump:
     def __call__(self, opt: base.Optimizer, *args: tp.Any, **kwargs: tp.Any) -> None:
         opt.dump(self._filepath)
 
+# -------------------------------------------------------------------------------------
 
 class ProgressBar:
     """Progress bar to register as callback in an optimizer"""
@@ -303,6 +308,7 @@ class ProgressBar:
         state["_progress_bar"] = None
         return state
 
+# -------------------------------------------------------------------------------------
 
 class EarlyStopping:
     """Callback for stopping the :code:`minimize` method before the budget is
@@ -352,7 +358,6 @@ class EarlyStopping:
         """Early stop when loss didn't reduce during tolerance_window asks"""
         return cls(_LossImprovementToleranceCriterion(tolerance_window))
 
-
 class _DurationCriterion:
     def __init__(self, max_duration: float) -> None:
         self._start = float("inf")
@@ -362,7 +367,6 @@ class _DurationCriterion:
         if np.isinf(self._start):
             self._start = time.time()
         return time.time() > self._start + self._max_duration
-
 
 class _LossImprovementToleranceCriterion:
     def __init__(self, tolerance_window: int) -> None:
@@ -384,3 +388,165 @@ class _LossImprovementToleranceCriterion:
             self._tolerance_count = 0
             self._best_value = best_last_losses
         return self._tolerance_count > self._tolerance_window
+
+# -------------------------------------------------------------------------------------
+
+import os
+import subprocess
+import time
+import warnings
+
+class SlurmStopping:
+    def __init__(self, threshold_seconds: int = 300):
+        self.threshold = threshold_seconds
+        self.job_start_time, self.job_duration = self._get_slurm_times()
+        self.job_end_time = self.job_start_time + self.job_duration
+
+    def __call__(self, *args, **kwargs):
+        if args or kwargs:
+            raise errors.NevergradRuntimeError("SlurmStopping must be registered on ask method")
+        time_left = self.job_end_time - time.time()
+        if time_left <= self.threshold:
+            raise errors.NevergradEarlyStopping(f"SLURM timeout in {self.threshold} seconds, stopping optimization.")
+
+    def _get_slurm_times(self):
+        job_id = os.environ.get("SLURM_JOB_ID")
+        if not job_id:
+            warnings.warn("SlurmStopping is a no-op: not running inside a SLURM job.", RuntimeWarning)
+
+        try:
+            out = subprocess.check_output(["scontrol", "show", "job", job_id], encoding="utf-8")
+        except Exception as e:
+            raise errors.NevergradRuntimeError(f"scontrol failed: {e}")
+
+        start_timestamp = None
+        time_limit_sec = None
+        for line in out.splitlines():
+            if "StartTime=" in line:
+                # e.g. StartTime=2025-04-15T02:30:00
+                for field in line.strip().split():
+                    if field.startswith("StartTime="):
+                        start_str = field.split("=")[1]
+                        if start_str == "Unknown":
+                            start_timestamp = time.time()
+                        else:
+                            start_timestamp = time.mktime(time.strptime(start_str, "%Y-%m-%dT%H:%M:%S"))
+            if "TimeLimit=" in line:
+                for field in line.strip().split():
+                    if field.startswith("TimeLimit="):
+                        limit_str = field.split("=")[1]  # e.g. "01:00:00"
+                        h, m, s = map(int, limit_str.split(":"))
+                        time_limit_sec = h * 3600 + m * 60 + s
+
+        if start_timestamp is None or time_limit_sec is None:
+            raise errors.NevergradRuntimeError("Failed to extract StartTime or TimeLimit from scontrol")
+
+        return start_timestamp, time_limit_sec
+
+# -------------------------------------------------------------------------------------
+
+import time
+import logging
+import numpy as np
+from typing import Callable, List
+from concurrent.futures import ThreadPoolExecutor, Future
+from nevergrad.optimization.base import Optimizer
+from nevergrad.parametrization.parameter import Parameter
+from nevergrad.common.typing import FloatLoss
+
+logger = logging.getLogger(__name__)
+
+class TimedCallback:
+    def __init__(self, interval_sec: float = 60.0):
+        self.interval_sec = interval_sec
+        self._last_time = time.time()
+
+    def should_run(self) -> bool:
+        now = time.time()
+        if now - self._last_time >= self.interval_sec:
+            self._last_time = now
+            return True
+        return False
+
+    def get_callback(self) -> Callable[[Optimizer, Parameter, FloatLoss], None]:
+        raise NotImplementedError
+
+
+class HSICLoggerCallback(TimedCallback):
+    def __init__(self, parameter_names: tp.Optional[tp.List[str]] = None, kernel_dim=100, sigma=1.0, interval_sec=60.0):
+        super().__init__(interval_sec)
+        self.kernel_dim = kernel_dim
+        self.sigma = sigma
+        self._zx_mean = None
+        self._zy_mean = None
+        self._c_xy = None
+        self._n = 0
+        self._buffer: List[tuple[np.ndarray, float]] = []
+        self._rff_ready = False
+        self.rff_weights_x = None
+        self.rff_bias_x = None
+        self.rff_weights_y = None
+        self.rff_bias_y = None
+        self._executor = ThreadPoolExecutor(max_workers=1)
+        self._flush_future: Future = None
+
+    def __call__(self, optimizer, candidate, loss):
+        self.buffer_point(np.asarray(candidate.value), loss)
+        if self.should_run():
+            if self._flush_future and not self._flush_future.done():
+                logger.warning("Skipped HSIC flush: previous flush still in progress.")
+            else:
+                self._flush_future = self._executor.submit(self._flush_impl)
+
+    def _init_rff(self, dim_x: int, dim_y: int):
+        self.rff_weights_x = np.random.normal(0, 1.0 / self.sigma, (dim_x, self.kernel_dim))
+        self.rff_bias_x = np.random.uniform(0, 2 * np.pi, self.kernel_dim)
+        self.rff_weights_y = np.random.normal(0, 1.0 / self.sigma, (dim_y, self.kernel_dim))
+        self.rff_bias_y = np.random.uniform(0, 2 * np.pi, self.kernel_dim)
+        self._rff_ready = True
+
+    def _rff(self, x: np.ndarray, weights: np.ndarray, bias: np.ndarray) -> np.ndarray:
+        return np.sqrt(2.0 / self.kernel_dim) * np.cos(x @ weights + bias)
+
+    def buffer_point(self, x: np.ndarray, y: float):
+        self._buffer.append((x.copy(), float(y)))
+
+    def _flush_impl(self):
+        if not self._buffer:
+            return
+
+        x_all = np.array([x for x, _ in self._buffer])
+        y_all = np.array([[y] for _, y in self._buffer])
+        self._buffer.clear()
+
+        if not self._rff_ready:
+            self._init_rff(x_all.shape[1], y_all.shape[1])
+
+        zx_all = self._rff(x_all, self.rff_weights_x, self.rff_bias_x)
+        zy_all = self._rff(y_all, self.rff_weights_y, self.rff_bias_y)
+
+        for zx, zy in zip(zx_all, zy_all):
+            zx = zx.reshape(1, -1)
+            zy = zy.reshape(1, -1)
+            if self._n == 0:
+                self._zx_mean = zx.copy()
+                self._zy_mean = zy.copy()
+                self._c_xy = np.zeros((self.kernel_dim, self.kernel_dim))
+            else:
+                alpha = 1.0 / (self._n + 1)
+                self._zx_mean = (1 - alpha) * self._zx_mean + alpha * zx
+                self._zy_mean = (1 - alpha) * self._zy_mean + alpha * zy
+                dx = zx - self._zx_mean
+                dy = zy - self._zy_mean
+                self._c_xy = (1 - alpha) * self._c_xy + alpha * (dx.T @ dy)
+            self._n += 1
+
+        print(self.summary())
+
+    def hsic_score(self) -> float:
+        return float(np.sum(self._c_xy ** 2)) if self._c_xy is not None else 0.0
+
+    def summary(self) -> str:
+        return f"Incremental RFF-HSIC: N={self._n}, HSIC={self.hsic_score():.6f}"
+
+# -------------------------------------------------------------------------------------

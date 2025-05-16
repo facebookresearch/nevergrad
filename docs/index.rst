@@ -50,21 +50,47 @@ Learn more about parametrization in the :ref:`Parametrization section <parametri
 
 .. toctree::
    :maxdepth: 3
-   :caption: Contents
+   :caption: CONTENTS
 
    getting_started.rst
+   windows.md
    optimization.rst
    parametrization.rst
-   machinelearning.rst
-   optimizers_ref.rst
-   parametrization_ref.rst
+   constraints.rst
    benchmarking.rst
+   contributing.rst
+   opencompetition2020.md
+
+
+.. toctree::
+   :maxdepth: 3
+   :caption: API REFERENCE
+
+   ref_optimizer.rst
+   ref_parametrization.rst
+   ref_callbacks.rst
+
+
+.. toctree::
+   :maxdepth: 3
+   :caption: EXAMPLES
+
+   machinelearning.rst
    r.rst
    benchmarks.rst
    pyomo.rst
-   windows.md
-   contributing.rst
-   opencompetition2020.md
+   examples/guiding/Guiding image generation with Nevergrad.md
+   examples/diversity/Diversity in image generation with Nevergrad.md
+   examples/lognormal/Lognormal mutations in Nevergrad.md
+   examples/retrofitting/Retrofitting with Nevergrad.md
+
+
+.. toctree::
+   :maxdepth: 3
+   :caption: STATISTICS
+
+   statistics/Statistics.md
+   statistics/AgStatistics.md
 
 
 Citing

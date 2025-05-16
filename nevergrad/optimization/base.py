@@ -310,14 +310,14 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         ----------
         x: np.ndarray
             point where the function was evaluated
-        loss: float/list/np.ndarray
-            loss of the function (or multi-objective function
-        constraint_violation: float/list/np.ndarray/None
+        loss: float or list or np.ndarray
+            loss of the function (or multi-objective function)
+        constraint_violation: float or list or np.ndarray or None
             constraint violation (> 0 means that this is not correct)
-        penalty_style: ArrayLike/None
+        penalty_style: ArrayLike or None
             to be read as [a,b,c,d,e,f]
             with cv the constraint violation vector (above):
-            penalty = (a + sum(|loss|)) * (f+num_tell)**e * (b * sum(cv**c)) ** d
+            penalty = (a + sum(`|loss|`)) * (f+num_tell)**e * (b * sum(cv**c)) ** d
             default: [1e5, 1., .5, 1., .5, 1.]
 
         Note
@@ -666,8 +666,8 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         for evaluation purpose and with the current implementation, it is better to use batch_mode=True
         """
         # pylint: disable=too-many-branches
-        if self.budget is None:
-            raise ValueError("Budget must be specified")
+        #if self.budget is None:
+        #    raise ValueError("Budget must be specified")
         if executor is None:
             executor = utils.SequentialExecutor()  # defaults to run everything locally and sequentially
             if self.num_workers > 1:
@@ -680,11 +680,11 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         tmp_finished: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = deque()
         # go
         sleeper = ngtools.Sleeper()  # manages waiting time depending on execution time of the jobs
-        remaining_budget = self.budget - self.num_ask
+        remaining_budget = float("inf") if self.budget is None else self.budget - self.num_ask
         first_iteration = True
         #
         t0 = time.time()
-        while (remaining_budget or self._running_jobs or self._finished_jobs) and (
+        while (remaining_budget > 0 or self._running_jobs or self._finished_jobs) and (
             max_time is None or time.time() < t0 + max_time
         ):
             # # # # # Update optimizer with finished jobs # # # # #
@@ -715,7 +715,10 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                 sleeper.sleep()
             # # # # # Start new jobs # # # # #
             if not batch_mode or not self._running_jobs:
-                new_sugg = max(0, min(remaining_budget, self.num_workers - len(self._running_jobs)))
+                if remaining_budget == float("inf"):
+                    new_sugg = self.num_workers - len(self._running_jobs)
+                else:
+                    new_sugg = max(0, min(remaining_budget, self.num_workers - len(self._running_jobs)))
                 if verbosity and new_sugg:
                     print(f"Launching {new_sugg} jobs with new suggestions")
                 for _ in range(new_sugg):
@@ -729,7 +732,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
                     )
                 if new_sugg:
                     sleeper.start_timer()
-            if remaining_budget > 0:  # early stopping sets it to 0
+            if self.budget is not None and remaining_budget > 0:  # early stopping sets it to 0
                 remaining_budget = self.budget - self.num_ask
             # split (repopulate finished and runnings in only one loop to avoid
             # weird effects if job finishes in between two list comprehensions)

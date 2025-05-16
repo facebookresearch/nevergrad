@@ -5,7 +5,7 @@ Related plugin: https://github.com/mathuvu/sd-webui-diversity
 
 Comments welcome here: https://www.facebook.com/groups/nevergradusers/
 
-## Diversity
+# Diversity
 
 Randomly generating points in a domain can be disappointing: sometimes ten random values are poorly distributed in the domain.
 

@@ -1,0 +1,5 @@
+sphinx>=8.1
+sphinx_rtd_theme
+sphinx-design
+myst-parser>=2.0
+numpy

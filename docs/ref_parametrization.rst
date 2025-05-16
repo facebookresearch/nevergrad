@@ -1,16 +1,20 @@
+
+Parametrization API (ng.p)
+==========================
+
 .. _parametrization_ref:
 
-Parametrization API reference
-=============================
+.. note::
 
-**Please note that parametrization is still a work in progress and changes are on their way (including for this documentation)! We are trying to update it to make it simpler and simpler to use (all feedbacks are welcome ;) ), with the side effect that there will be breaking changes.**
+  Please note that parametrization is still a work in progress and changes are on their way including for this documentation ! We are trying to update it to make it simpler and simpler to use with the side effect that there will be breaking changes. All feedback is welcome.
 
-The aim of parametrization is to specify what are the parameters that the optimization should be performed upon.
-The parametrization subpackage will help you do thanks to:
+The aim of parametrization is to specify what are the parameters that the optimization should be performed upon. The parametrization subpackage will help you do thanks to:
 
 - the `parameter` modules (accessed by the shortcut `nevergrad.p`) providing classes that should be used to specify each parameter.
+
 - the `ops` module (accessed through `ng.ops`) providing experimental objects for modifying a parameter behavior (eg: casting to int, adding complex constraints).
-- the `FolderFunction` which helps transform any code into a Python function in a few lines. This can be especially helpful to optimize parameters in non-Python 3.6+ code (C++, Octave, etc...) or parameters in scripts.
+
+- the `FolderFunction` which helps transform any code into a Python function in a few lines. This can be especially helpful to optimize parameters in non-Python 3.6+ code (C++, Octave, ...) or parameters in scripts.
 
 
 Parameters
@@ -43,10 +47,8 @@ Parameter API
 
 Operators
 ---------
-These experimental operators are designed to be instantiated and called with a parameter as input, creating a new parameter with the required behavior.
+
+*Operators* are designed to be instantiated and called with a parameter as input, creating a new parameter with the required behavior. *Constraints* are implemented as operators.
 
 .. automodule:: nevergrad.ops
-    :members: Int
-
-
-
+    :members: Int, Constraint, BisectionProjectionConstraint
