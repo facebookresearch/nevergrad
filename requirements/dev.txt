@@ -4,7 +4,7 @@ pytest>=4.3.0
 pytest-cov>=2.6.1
 pylint>=2.4.4
 wheel>=0.33.6
-setuptools==70.0.0
+setuptools==78.1.1
 #setuptools>=41.2.0
 sphinx>=3.3.0
 sphinx_rtd_theme>=0.4.3
