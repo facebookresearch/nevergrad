@@ -1,0 +1,37 @@
+#!/bin/bash
+#SBATCH --job-name=rwdag
+#SBATCH --output=rwdag_%A_%a.out
+#SBATCH --error=rwdag_%A_%a.err
+#SBATCH --time=72:00:00
+#SBATCH --partition=scavenge
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=70
+#SBATCH -a 0-277
+
+
+tasks=(multi_structured_ng_full_gym ng_gym sequential_fastgames small_deterministic_gym_multi tiny_deterministic_gym_multi aquacrop_fao double_o_seven fishing keras_tuning mldakmeans mltuning mono_rocket naive_seq_keras_tuning naive_seq_mltuning naive_veryseq_keras_tuning naivemltuning nano_naive_seq_mltuning nano_naive_veryseq_mltuning nano_seq_mltuning nano_veryseq_mltuning neuro_oneshot_mltuning rocket seq_keras_tuning seq_mltuning multi_ceviche_c0 ultrasmall_photonics ultrasmall_photonics2 veryseq_keras_tuning ms_bbob ranknoisy powersystems verysmall_photonics verysmall_photonics2)
+tasks=(multi_structured_ng_full_gym ng_gym topology_optimization sequential_fastgames small_deterministic_gym_multi tiny_deterministic_gym_multi aquacrop_fao double_o_seven fishing keras_tuning mldakmeans mltuning mono_rocket naive_seq_keras_tuning naive_seq_mltuning naive_veryseq_keras_tuning naivemltuning nano_naive_seq_mltuning nano_naive_veryseq_mltuning nano_seq_mltuning nano_veryseq_mltuning neuro_oneshot_mltuning rocket seq_keras_tuning seq_mltuning multi_ceviche_c0 ultrasmall_photonics ultrasmall_photonics2 veryseq_keras_tuning ms_bbob ranknoisy powersystems verysmall_photonics verysmall_photonics2 multi_structured_ng_full_gym ng_gym topology_optimization sequential_fastgames small_deterministic_gym_multi tiny_deterministic_gym_multi aquacrop_fao double_o_seven fishing keras_tuning mldakmeans mltuning mono_rocket naive_seq_keras_tuning naive_seq_mltuning naive_veryseq_keras_tuning naivemltuning nano_naive_seq_mltuning nano_naive_veryseq_mltuning nano_seq_mltuning nano_veryseq_mltuning neuro_oneshot_mltuning rocket seq_keras_tuning seq_mltuning multi_ceviche_c0 ultrasmall_photonics ultrasmall_photonics2 veryseq_keras_tuning ms_bbob ranknoisy powersystems verysmall_photonics verysmall_photonics2 multi_structured_ng_full_gym ng_gym topology_optimization sequential_fastgames small_deterministic_gym_multi tiny_deterministic_gym_multi aquacrop_fao double_o_seven fishing keras_tuning mldakmeans mltuning mono_rocket naive_seq_keras_tuning naive_seq_mltuning naive_veryseq_keras_tuning naivemltuning nano_naive_seq_mltuning nano_naive_veryseq_mltuning nano_seq_mltuning nano_veryseq_mltuning neuro_oneshot_mltuning rocket seq_keras_tuning seq_mltuning multi_ceviche_c0 ultrasmall_photonics ultrasmall_photonics2 veryseq_keras_tuning ms_bbob ranknoisy powersystems verysmall_photonics verysmall_photonics2 multi_structured_ng_full_gym ng_gym topology_optimization sequential_fastgames small_deterministic_gym_multi tiny_deterministic_gym_multi aquacrop_fao double_o_seven fishing keras_tuning mldakmeans mltuning mono_rocket naive_seq_keras_tuning naive_seq_mltuning naive_veryseq_keras_tuning naivemltuning nano_naive_seq_mltuning nano_naive_veryseq_mltuning nano_seq_mltuning nano_veryseq_mltuning neuro_oneshot_mltuning rocket seq_keras_tuning seq_mltuning multi_ceviche_c0 ultrasmall_photonics ultrasmall_photonics2 veryseq_keras_tuning ms_bbob ranknoisy powersystems verysmall_photonics verysmall_photonics2 multi_structured_ng_full_gym ng_gym topology_optimization sequential_fastgames small_deterministic_gym_multi tiny_deterministic_gym_multi aquacrop_fao double_o_seven fishing keras_tuning mldakmeans mltuning mono_rocket naive_seq_keras_tuning naive_seq_mltuning naive_veryseq_keras_tuning naivemltuning nano_naive_seq_mltuning nano_naive_veryseq_mltuning nano_seq_mltuning nano_veryseq_mltuning neuro_oneshot_mltuning rocket seq_keras_tuning seq_mltuning multi_ceviche_c0 ultrasmall_photonics ultrasmall_photonics2 veryseq_keras_tuning ms_bbob ranknoisy powersystems verysmall_photonics verysmall_photonics2 multi_structured_ng_full_gym ng_gym topology_optimization sequential_fastgames small_deterministic_gym_multi tiny_deterministic_gym_multi aquacrop_fao double_o_seven fishing keras_tuning mldakmeans mltuning mono_rocket naive_seq_keras_tuning naive_seq_mltuning naive_veryseq_keras_tuning naivemltuning nano_naive_seq_mltuning nano_naive_veryseq_mltuning nano_seq_mltuning nano_veryseq_mltuning neuro_oneshot_mltuning rocket seq_keras_tuning seq_mltuning multi_ceviche_c0 ultrasmall_photonics ultrasmall_photonics2 veryseq_keras_tuning ms_bbob ranknoisy powersystems verysmall_photonics verysmall_photonics2 multi_structured_ng_full_gym ng_gym topology_optimization sequential_fastgames small_deterministic_gym_multi tiny_deterministic_gym_multi aquacrop_fao double_o_seven fishing keras_tuning mldakmeans mltuning mono_rocket naive_seq_keras_tuning naive_seq_mltuning naive_veryseq_keras_tuning naivemltuning nano_naive_seq_mltuning nano_naive_veryseq_mltuning nano_seq_mltuning nano_veryseq_mltuning neuro_oneshot_mltuning rocket seq_keras_tuning seq_mltuning multi_ceviche_c0 ultrasmall_photonics ultrasmall_photonics2 veryseq_keras_tuning ms_bbob ranknoisy powersystems verysmall_photonics verysmall_photonics2 multi_structured_ng_full_gym ng_gym topology_optimization sequential_fastgames small_deterministic_gym_multi tiny_deterministic_gym_multi aquacrop_fao double_o_seven fishing keras_tuning mldakmeans mltuning mono_rocket naive_seq_keras_tuning naive_seq_mltuning naive_veryseq_keras_tuning naivemltuning nano_naive_seq_mltuning nano_naive_veryseq_mltuning nano_seq_mltuning nano_veryseq_mltuning neuro_oneshot_mltuning rocket seq_keras_tuning seq_mltuning multi_ceviche_c0 ultrasmall_photonics ultrasmall_photonics2 veryseq_keras_tuning ms_bbob ranknoisy powersystems verysmall_photonics verysmall_photonics2)
+
+task=${tasks[SLURM_ARRAY_TASK_ID]}
+
+echo task attribution $SLURM_ARRAY_TASK_ID $task
+echo Keras/TF versions:
+pip show keras tensorflow tensorflow-estimator
+
+conda info
+
+echo Starting at
+date
+# num_workers is the number of processes. Maybe use a bit more than the number of cores at the line "cpus-per-task"
+# above.
+python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
+#python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
+#python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
+#python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
+#python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
+#python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
+#python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
+#python -m nevergrad.benchmark $task --num_workers=73 2>&1 | tail -n 50
+echo task over $SLURM_ARRAY_TASK_ID $task
+echo Finishing at
+date

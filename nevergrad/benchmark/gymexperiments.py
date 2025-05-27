@@ -23,6 +23,9 @@ def gym_problem_modifier(specific_problem):
 
 
 def gym_optimizer_modifier(optims):
+    return [np.random.choice(["NgLO1","NgLO2"])]
+    return ["NgLN"]
+    return [np.random.choice(["DE", "SQOPSO", "Cobyla", "DiscreteLenglerOnePlusOne", "DiscreteOnePlusOne", "AXP", "CauchyRandomSearch", "DSproba", "MetaModel", "LLAMAAdaptiveHybridDEPSOWithDynamicRestart", "LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation", "LLAMAEnhancedDynamicPrecisionBalancedEvolution"])]
     print(optims)
     if os.environ.get("GYM_OPTIMIZER") is not None:
         optimizer_string = os.environ.get("GYM_OPTIMIZER")
@@ -140,6 +143,7 @@ def ng_full_gym(
     optims = ["NgIoh4"]
     optims = [np.random.choice(["CSEC11", "SQOPSODCMA", "NgIoh4", "NGOpt"])]
     optims = ["CSEC11"]
+    optims = ["NgIohTuned", "NgIohLM"]
     if structured:
         optims = get_optimizers("split", seed=next(seedg))  # type: ignore
         # optims = [np.random.choice(optims)]
@@ -156,6 +160,7 @@ def ng_full_gym(
     optims = ["OLNDiscreteOnePlusOne"]
     optims = ["NgIohLn"]
     optims = [np.random.choice(["NgIohMLn", "NgIohLn", "NgIoh"])]
+    optims = [np.random.choice(["NgIohTuned", "NgIohLM", "NGOpt", "PymooBIPOP", "CMA", "SQOPSO"])]
     if multi:
         controls = ["multi_neural"]
     else:

@@ -732,6 +732,9 @@ class _CMA(base.Optimizer):
         scale_multiplier = 1.0
         if self.dimension == 1:
             self._config.fcmaes = True
+        if self.dimension > 1 and self.budget > 100000:   # Nan sometimes appear in FCMAES with large budget
+            self._config.fcmaes = False
+
         if p.helpers.Normalizer(self.parametrization).fully_bounded:
             scale_multiplier = 0.3 if self.dimension < 18 else 0.15
         if self._es is None or (not self._config.fcmaes and self._es.stop()):
@@ -7433,9 +7436,280 @@ class CSEC11(NGOptBase):
 
 
 @registry.register
+class NgIohLama(CSEC11):
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert self.budget is not None
+        function = self.parametrization
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and self.budget is not None
+            and self.budget >= 2000 * self.dimension
+            and not self.has_noise
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            return LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation
+        else:
+            return CSEC11._select_optimizer_cls(self, budget)  # type: ignore
+
+
+@registry.register
+class NgIohLLM(CSEC11):
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert self.budget is not None
+        function = self.parametrization
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and budget is not None
+            and self.budget >= 2000 * self.dimension
+            and not self.has_noise
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            if self.dimension < 4 and budget > 200000:
+                return LLAMAImprovedHybridCMAESDE
+            if self.dimension < 4 and budget > 120000:
+                return LLAMAAdaptiveHybridDEPSOWithDynamicRestart
+            if self.dimension < 4 and budget > 60000:
+                return LLAMAAdaptiveHybridDEPSOWithDynamicRestart
+            if self.dimension < 4:
+                return LLAMAAdaptiveHybridDEPSOWithDynamicRestart
+            if self.dimension < 9 and budget > 200000:
+                return LLAMAEnhancedHybridDEPSOWithDynamicAdaptationV4
+            if self.dimension < 9 and budget > 120000:
+                return LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation
+            if self.dimension < 9 and budget > 60000:
+                return LLAMAAdvancedHybridDEPSOWithDynamicAdaptationAndRestart
+            if self.dimension < 9:
+                return LLAMAHADEMI
+            if self.dimension < 20 and budget > 200000:
+                return LLAMAEnhancedHybridDEPSOWithDynamicAdaptationV4
+            if self.dimension < 20 and budget > 120000:
+                return LLAMAEnhancedHybridDEPSOWithDynamicAdaptationV4
+            if self.dimension < 20 and budget > 60000:
+                return LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation
+            if self.dimension >= 20 and budget > 200000:
+                return LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation
+            if self.dimension >= 20 and budget > 120000:
+                return SQOPSO
+            return LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation
+        else:
+            return CSEC11._select_optimizer_cls(self, budget)  # type: ignore
+
+
+@registry.register
+class NgIohILLM(CSEC11):
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert self.budget is not None
+        function = self.parametrization
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and budget is not None
+            and self.budget >= 2000 * self.dimension
+            and not self.has_noise
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            if self.budget < 30000 or self.budget > 400000 or self.dimension < 2  or self.dimension > 60:
+                return CSEC11._select_optimizer_cls(self, budget)
+            if self.dimension < 4:
+                if self.budget < 60000:
+                    return LLAMAEnhancedHybridDEPSOWithDynamicAdaptationV4
+                if self.budget < 120000:
+                    return LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation
+                if self.budget < 200000:
+                    return LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation
+                return LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation
+            if self.dimension < 10:
+                if self.budget < 60000:
+                    return LLAMAERADS_QuantumFlux
+                if self.budget < 120000:
+                    return LLAMAAdvancedHybridDEPSOWithDynamicAdaptationAndRestart
+                if self.budget < 200000:
+                    return LLAMAEnhancedHybridDEPSOWithDynamicAdaptationV4
+                return LLAMARefinedHybridDEPSOWithDynamicAdaptationV3
+            if self.dimension < 20:
+                if self.budget < 60000:
+                    return CSEC11._select_optimizer_cls(self, budget)
+                if self.budget < 120000:
+                    return LLAMAAdvancedHybridDEPSOWithDynamicAdaptationAndRestart
+                if self.budget < 200000:
+                    return LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation
+                return LLAMAEnhancedHybridDEPSOWithDynamicAdaptationV4
+            if True:
+                if self.budget < 60000:
+                    return CSEC11._select_optimizer_cls(self, budget)
+                if self.budget < 120000:
+                    return LLAMAAdvancedHybridDEPSOWithDynamicAdaptationAndRestart
+                if self.budget < 200000:
+                    return LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation
+                return LLAMAEnhancedHybridDEPSOWithDynamicAdaptationV4
+
+
+            if self.dimension >= 20 and self.dimension <= 60 and budget > 120000:
+                return SQOPSO
+            return LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation
+        else:
+            return CSEC11._select_optimizer_cls(self, budget)  # type: ignore
+
+
+@registry.register
+class NgLO1(CSEC11):
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert self.budget is not None
+        function = self.parametrization
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and budget is not None
+            and self.budget >= 40000 * self.dimension
+            and self.dimension < 10 and self.dimension > 2
+            and not self.has_noise
+        ):
+            return LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation
+        else:
+            return CSEC11._select_optimizer_cls(self, budget)
+
+@registry.register
+class NgLO2(CSEC11):
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert self.budget is not None
+        function = self.parametrization
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and budget is not None
+            and self.budget >= 40000 * self.dimension
+            and self.dimension < 10 and self.dimension > 2
+            and not self.has_noise
+        ):
+            return SQOPSODCMA 
+        else:
+            return CSEC11._select_optimizer_cls(self, budget)
+
+@registry.register
+class NgIohLM(CSEC11):
+    def _select_optimizer_cls(self, budget: tp.Optional[int] = None) -> base.OptCls:
+        assert self.budget is not None
+        function = self.parametrization
+        if (
+            self.fully_continuous
+            and self.num_workers == 1
+            and budget is not None
+            and self.budget >= 2000 * self.dimension
+            and not self.has_noise
+        ):
+            # print(f"budget={self.budget}, dim={self.dimension}, nw={self.num_workers}, Carola2")
+            if self.budget < 30000 or self.budget > 400000 or self.dimension < 2  or self.dimension > 60:
+                return CSEC11._select_optimizer_cls(self, budget)
+            if self.dimension < 4:
+                if self.budget < 30:
+                    return NgIohLLM._select_optimizer_cls(self, budget)
+                if self.budget < 50:
+                    return NGOpt._select_optimizer_cls(self, budget)
+                if self.budget < 100:
+                    return NgIohILLM._select_optimizer_cls(self, budget)
+                if self.budget < 1500:
+                    return NgIohLama._select_optimizer_cls(self, budget)
+                if self.budget < 10000:
+                    return CSEC11._select_optimizer_cls(self, budget)
+                if self.budget < 30000:
+                    return LLAMARefinedHybridDEPSOWithDynamicAdaptationV3
+                if self.budget < 60000:
+                    return LLAMAEnhancedHybridDEPSOWithDynamicAdaptationV4
+                if self.budget < 120000:
+                    return LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation
+                if self.budget < 200000:
+                    return LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation
+                return LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation
+            if self.dimension < 10:
+                if self.budget < 20:
+                    return NgIohTuned._select_optimizer_cls(self, budget)
+                if self.budget < 30:
+                    return NgIohLama._select_optimizer_cls(self, budget)
+                if self.budget < 50:
+                    return NgIohILLM._select_optimizer_cls(self, budget)
+                if self.budget < 100:
+                    return NgIohTuned._select_optimizer_cls(self, budget)
+                if self.budget < 600:
+                    return NgIohILLM._select_optimizer_cls(self, budget)
+                if self.budget < 600:
+                    return NgIohLLM._select_optimizer_cls(self, budget)
+                if self.budget < 20000:
+                    return NgIohILLM._select_optimizer_cls(self, budget)
+                if self.budget < 30000:
+                    return NGOpt._select_optimizer_cls(self, budget)
+                if self.budget < 60000:
+                    return LLAMAERADS_QuantumFlux
+                if self.budget < 120000:
+                    return LLAMAAdvancedHybridDEPSOWithDynamicAdaptationAndRestart
+                if self.budget < 200000:
+                    return LLAMAEnhancedHybridDEPSOWithDynamicAdaptationV4
+                return LLAMARefinedHybridDEPSOWithDynamicAdaptationV3
+            if self.dimension < 20:
+                if self.budget < 100:
+                    return NgIohILLM._select_optimizer_cls(self, budget)
+                if self.budget < 400:
+                    return NGOpt._select_optimizer_cls(self, budget)
+                if self.budget < 1000:
+                    return NgIohLLM._select_optimizer_cls(self, budget)
+                if self.budget < 5000:
+                    return NgIohILLM._select_optimizer_cls(self, budget)
+                if self.budget < 60000:
+                    return CSEC11._select_optimizer_cls(self, budget)
+                if self.budget < 120000:
+                    return LLAMAAdvancedHybridDEPSOWithDynamicAdaptationAndRestart
+                if self.budget < 200000:
+                    return LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation
+                return LLAMAEnhancedHybridDEPSOWithDynamicAdaptationV4
+            if self.dimension > 2000:
+                if self.budget > 1000:
+                    return DiagonalCMA
+                if self.budget > 400:
+                    return NgIohILLM._select_optimizer_cls(self, budget)
+                return NgIohTuned._select_optimizer_cls(self, budget)
+            if self.dimension > 500:
+                if self.budget > 1000:
+                    return DiagonalCMA
+                if self.budget > 400:
+                    return NgIohILLM._select_optimizer_cls(self, budget)
+            if self.dimension > 60:
+                if self.budget > 1000:
+                    return NgIohLama._select_optimizer_cls(self, budget)
+                if self.budget > 400:
+                    return NGOpt._select_optimizer_cls(self, budget)
+
+                
+            if True:
+                if self.budget < 100:
+                    return NgIohLLM._select_optimizer_cls(self, budget)
+                if self.budget < 400:
+                    return NgIohLama._select_optimizer_cls(self, budget)
+                if self.budget < 1000:
+                    return NgIohILLM._select_optimizer_cls(self, budget)
+                if self.budget < 5000:
+                    return NgIohLLM._select_optimizer_cls(self, budget)
+                if self.budget < 60000:
+                    return CSEC11._select_optimizer_cls(self, budget)
+                if self.budget < 120000:
+                    return LLAMAAdvancedHybridDEPSOWithDynamicAdaptationAndRestart
+                if self.budget < 200000:
+                    return LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation
+                return LLAMAEnhancedHybridDEPSOWithDynamicAdaptationV4
+
+
+            if self.dimension >= 20 and self.dimension <= 60 and budget > 120000:
+                return SQOPSO
+            return LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation
+        else:
+            return CSEC11._select_optimizer_cls(self, budget)  # type: ignore
+
+
+@registry.register
 class NgIohTuned(CSEC11):
     # Learning something automatically so that it's less unreadable would be great.
     pass
+
 
 
 # ExtLognormalDiscreteOnePlusOne = Chaining(

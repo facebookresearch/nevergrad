@@ -42,7 +42,7 @@ cat scripts/tex/beginning.tex
 for v in zp_ms_bbob_plots/fight_translation_factor0.01.png_pure.png zp_ms_bbob_plots/fight_translation_factor0.1.png_pure.png zp_ms_bbob_plots/fight_translation_factor1.0.png_pure.png zp_ms_bbob_plots/fight_translation_factor10.0.png_pure.png zp_ms_bbob_plots/fight_all_pure.png zp_ms_bbob_plots/xpresults_all.png
 do
  convert $v -trim +repage prout.png
- cp prout $v
+ cp prout.png $v
  img2pdf -o ${v}.pdf $v
 done
 for u in $allplots
@@ -102,7 +102,18 @@ echo "\\subsubsection{Number of times each algorithm was ranked among the $n fir
 echo "\\begin{itemize}"
 echo '\item []'
 #grep -A$n begin.enumerate dagstuhloid.tex | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
-egrep -v 'NgDS|NGDS|Multi|Carola|BAR|NGOpt[0-9A-Z]|NgIoh|Wiz|BIPOP|Shiwa|Meta|Micro|Tiny|SQPCMA|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
+egrep -v 'NgDS|NGDS|Multi|Carola|BAR|NGOpt[0-9A-Z]|NgIoh|Wiz|BIPOP|Shiwa|Meta|Micro|Tiny|SQPCMA|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g'  | sed 's/Unordered//g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
+echo "\\end{itemize}"
+done 
+
+echo '\subsection{NgIohTuned and NgIohLM and base algorithms}'
+for n in 1 2 3 5000
+do
+echo "\\subsubsection{Number of times each algorithm was ranked among the $n first: NgIohTuned and NgIohLM and base algorithms}"
+echo "\\begin{itemize}"
+echo '\item []'
+#grep -A$n begin.enumerate dagstuhloid.tex | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
+egrep -v 'NgDS|NGOpt|NgIohLm|NGDS|Multi|Carola|BAR|NGOpt[0-9A-Z]|NgIoh[^TL]|NGOPT|NgIohLama|NgIohLLM|Wiz|BIPOP|Shiwa|Meta|Micro|Tiny|SQPCMA|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sed 's/Unordered//g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
 echo "\\end{itemize}"
 done 
 
@@ -113,7 +124,7 @@ do
 echo "\\subsubsection{Number of times each algorithm was ranked among the $n first: no wizard, no combination}"
 echo "\\begin{itemize}"
 echo '\item []'
-egrep -v 'NGDS|Carola|NgDS|NGOpt|Carola|BAR|Multi|BIPOP|NgIoh|Wiz|Shiwa|Meta|SQPCMA|Micro|Tiny|CMASQP|BIPOP|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
+egrep -v 'NGDS|Carola|NgDS|NGOpt|Carola|BAR|Multi|BIPOP|NgIoh|Wiz|Shiwa|Meta|SQPCMA|Micro|Tiny|CMASQP|BIPOP|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sed 's/Unordered//g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
 #egrep -v 'NGOpt|Carola|BAR|Multi|BIPOP|NgIoh|Wiz|Shiwa|Meta|SQPCMA|Micro|Tiny|CMASQP|BIPOP|CMandAS2|Chain' dagstuhloid.tex  |grep -A$n begin.enumerate  | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
 echo "\\end{itemize}"
 done 
@@ -125,7 +136,7 @@ do
 echo "\\subsubsection{Number of times each algorithm was ranked among the $n first: everything included}"
 echo "\\begin{itemize}"
 echo '\item []'
-grep -A$n begin.enumerate dagstuhloid.tex | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
+grep -A$n begin.enumerate dagstuhloid.tex | grep '(' | grep ')' | grep '^\\item' | sed 's/ (.*//g' | sed 's/^.item //g' | sed 's/Unordered//g' | sort | uniq -c | sort -n -r | head -n 8 | sed 's/^/\\item/g'
 echo "\\end{itemize}"
 done 
 

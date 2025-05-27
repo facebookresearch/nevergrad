@@ -54,6 +54,14 @@ from . import gymexperiments  # noqa
 #    list_optims = ["QOTPDE", "LQOTPDE", "LQODE"]
 #    list_optims = ["SPQODE", "SQOPSO", "DiagonalCMA"]
 def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
+    return [np.random.choice(["NgLO1","NgLO2"])]
+    #return ["AX", "PCABO"]
+    return ["LLAMAAdaptiveHybridDEPSOWithDynamicRestart", "LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation", "LLAMAEnhancedDynamicPrecisionBalancedEvolution", "MNO"]
+    return [np.random.choice(["DE", "SQOPSO", "Cobyla", "DiscreteLenglerOnePlusOne", "DiscreteOnePlusOne", "AXP", "CauchyRandomSearch", "DSproba", "MetaModel", "LLAMAAdaptiveHybridDEPSOWithDynamicRestart", "LLAMAEnhancedRefinedHybridDEPSOWithDynamicAdaptation", "LLAMAEnhancedDynamicPrecisionBalancedEvolution"])]
+    if np.random.choice([True, True]):
+        return [np.random.choice(["NgIohLM", "NGDSRW", "NgIohTuned", "NGOptRW"])]
+    if False:
+        return ["NgIohILLM", "NgIohTuned", "PymooBIPOP", "NGOpt"]
     # return ["DiscreteLenglerOnePlusOne"]
     #    return ["OLNDiscreteOnePlusOne"]
     # return [np.random.choice([
@@ -61,10 +69,16 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
     #    "SmallLognormalDiscreteOnePlusOne",
     #    "XLognormalDiscreteOnePlusOne",
     # ])]
-    lama = ["DiagonalCMA", "PymooBIPOP", "DE", "SQOPSO"] + (["NgIohTuned"] * 5) + [o for o in list(ng.optimizers.registry.keys()) if "LAMA" in o]
-    optims = [o for o in ng.optimizers.registry.keys() if "LAMA" in o]
-    lama = ["DiagonalCMA", "PymooBIPOP", "DE", "SQOPSO"] + (["NgIohTuned"] * 10) + [o for o in optims if any([(x in o) for x in ["ADEM", "ptiveHarmonySearch", "CMAESDE","bridDEPSOWithDyn", "CMA","ERADS_Q","EnhancedDynamicPrec","hancedFirew","QPSO","QuantumDifferentialPart"]])]
-    return list(np.random.choice(lama, 55))
+    #return ["NgIohLLM"]
+    if True:
+        optims = [o for o in ng.optimizers.registry.keys() if "LAMA" in o]
+        return np.random.choice(["DiagonalCMA", "NgIohLLM", "PymooBIPOP", "DE", "SQOPSO"] + ["NgIohTuned"] + [o for o in optims if any([(x in o) for x in ["ADEM", "ptiveHarmonySearch", "CMAESDE","bridDEPSOWithDyn", "CMA","ERADS_Q","EnhancedDynamicPrec","hancedFirew","QPSO","QuantumDifferentialPart"]])], 6, replace=False)
+        return ["NgIohLLM"]
+        # return ["NgIohLama"]
+        lama = ["DiagonalCMA", "PymooBIPOP", "DE", "SQOPSO"] + (["NgIohTuned"] * 5) + [o for o in list(ng.optimizers.registry.keys()) if "LAMA" in o]
+        optims = [o for o in ng.optimizers.registry.keys() if "LAMA" in o]
+        lama = ["DiagonalCMA", "PymooBIPOP", "DE", "SQOPSO"] + ["NgIohTuned"] + [o for o in optims if any([(x in o) for x in ["ADEM", "ptiveHarmonySearch", "CMAESDE","bridDEPSOWithDyn", "CMA","ERADS_Q","EnhancedDynamicPrec","hancedFirew","QPSO","QuantumDifferentialPart"]])]
+        return list(np.random.choice(lama, 2))
     # "BigLognormalDiscreteOnePlusOne",
     # "DiscreteLenglerOnePlusOne",
     # "NgLn",
@@ -485,7 +499,7 @@ def refactor_optims(x: tp.List[tp.Any]) -> tp.List[tp.Any]:  # type: ignore
     #    return ["DSproba" + str(i) for i in range(2, 10)]
     if benchmark in algos:  # and np.random.choice([True, False]):  # and np.random.randint(2) > 0 and False:
         list_algos = algos[benchmark][:5] + [
-            "CSEC10",
+            "NgIohLM",
             "NGOpt",
             "NLOPT_LN_SBPLX",
         ]
@@ -744,7 +758,6 @@ def keras_tuning(
     optims = refactor_optims(optims)
     datasets = ["kerasBoston", "diabetes", "auto-mpg", "red-wine", "white-wine"]
     optims = refactor_optims(optims)
-    optims = ["NgIohTuned"]
     for dimension in [None]:
         for dataset in datasets:
             function = MLTuning(
@@ -1773,8 +1786,10 @@ def yabbob(
     if bounded:
         budgets = [10, 20, 40, 100, 300]
     optims = refactor_optims(optims)
-    if hd or big:
-        optims = [np.random.choice(optims)]
+    if big:
+        #budgets = [np.random.choice(budgets)]
+        functions = list(np.random.choice(functions, 1, replace=False))
+        optims = list(np.random.choice(optims, 1, replace=False))
     for optim in optims:
         for function in functions:
             for budget in budgets:
@@ -1788,8 +1803,6 @@ def yabbob(
                 )
                 if constraint_case != 0:
                     xp.function.parametrization.has_constraints = True
-                if np.random.rand() > 0.25:
-                    continue
                 if not xp.is_incoherent:
                     yield xp
 
@@ -3862,7 +3875,6 @@ def lsgo() -> tp.Iterator[Experiment]:
     optims = ["TinyQODE", "OpoDE", "OpoTinyDE"]
     optims = refactor_optims(optims)
     optims = [np.random.choice(optims)]
-    optims = ["NgIohTuned"]
     for i in [np.random.choice(list(range(1, 16)))]:  # [np.random.choice(list(range(1, 16)))]:
         for optim in optims:
             for budget in [120000, 600000, 3000000]:

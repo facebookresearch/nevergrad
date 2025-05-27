@@ -290,8 +290,10 @@ def create_plots(
                     assert (
                         len(failed_indices) < 100
                     ), f"Fails at row {i+2}, Exceptions: {e1}, {e2}. Failed-indices = {failed_indices}"
-                    df.drop(index=i, inplace=True)
-                    print("We drop index ", i, " for ", col)
+            #for i in sorted(failed_indices, reverse=True):
+            #    print("We drop index ", i, " for ", col, " out of ", len(df.index), " rows.")
+            print("Dropping ", failed_indices)
+            df.drop(df.index[failed_indices], inplace=True) #index=i, axis='columns', inplace=True)
         elif col != "loss":
             df[col] = df[col].astype(str)
             df[col] = df[col].replace(r"\.[0]*$", "", regex=True)
@@ -388,11 +390,12 @@ def create_plots(
                         best_algo[i] += ["none"]
 
         # Let us loop over all combinations of variables.
+        numbers = defaultdict(list)
         for case in df.unique(fixed) if fixed else [()]:
             print("\n# new case #", fixed, case)
             casedf = df.select(**dict(zip(fixed, case)))
             data_df = FightPlotter.winrates_from_selection(
-                casedf, fight_descriptors, num_rows=num_rows, num_cols=350
+                casedf, fight_descriptors, num_rows=num_rows, num_cols=350, display=(len(fixed) == 1)
             )
             fplotter = FightPlotter(data_df)
             # Competence maps: we find out the best algorithm for each attribute1=valuei/attribute2=valuej.
@@ -405,6 +408,8 @@ def create_plots(
             name = compactize(name)
             fullname = name
 
+            print(f"Number {len([c for c in name if c ==','])} {name}")
+            numbers[len([c for c in name if c ==","])] += [(len(list(data_df.columns[:])), name)]
             if len(name) > 240:
                 hashcode = hashlib.md5(bytes(name, "utf8")).hexdigest()
                 name = re.sub(r"\([^()]*\)", "", name)
@@ -434,7 +439,12 @@ def create_plots(
                 name = "competencemap_" + ",".join("{}".format(x) for x in fixed) + ".tex"
                 export_table(str(output_folder / name), xindices, yindices, best_algo)
                 print("Competence map data:", fixed, case, best_algo)
-
+        for i in numbers:
+            print(f"Number = {i}")
+            if np.std([n[0] for n in numbers[i]]) > 0:
+                for a, b in sorted(numbers[i]):
+                    if a < np.average([n[0] for n in numbers[i]]) - np.std([n[0] for n in numbers[i]]):
+                        print("WARNING !!!", a, b, " vs average=", np.average([n[0] for n in numbers[i]]))
     plt.close("all")
     # xp plots: for each experimental setup, we plot curves with budget in x-axis.
     # plot mean loss / budget for each optimizer for 1 context
@@ -702,7 +712,19 @@ class XpPlotter:
                     "seed",
                 }
             )
+            my_descriptors = [c for c in df.columns if c not in ["pseudotime", "time", "elapsed_time", "loss", "seed"]]
+            my_dict = {}
+            for d in my_descriptors:
+                my_dict[d] = 'mean'
+            # print("grouping by ", my_descriptors)
+            # print("len(df) before = ", len(df))
+            # print("columns bofre:", df.columns)
+            df = df.groupby(my_descriptors).agg('mean').reset_index()
+            # print("len(df) after = ", len(df))
+            # print("columns after:", df.columns)
+            # print(df)
             df = normalized_losses(df, descriptors=descriptors)
+
         df = utils.Selector(
             df.loc[
                 :,
@@ -725,6 +747,7 @@ class XpPlotter:
             optim_vals[optim]["num_eval"] = num_eval
             if "pseudotime" in means.columns:
                 optim_vals[optim]["pseudotime"] = np.array(means.loc[optim, "pseudotime"])
+            
         return optim_vals
 
     @staticmethod
@@ -837,6 +860,7 @@ class FightPlotter:
         num_rows: int = 5,
         num_cols: int = 350,
         complete_runs_only: bool = False,
+        display: bool = False,
     ) -> pd.DataFrame:
         """Creates a fight plot win rate data out of the given run dataframe,
         by iterating over all cases with fixed category variables.
@@ -856,6 +880,11 @@ class FightPlotter:
         num_rows = min(num_rows, len(all_optimizers))
         # iterate on all sub cases
         victories, total = aggregate_winners(df, categories, all_optimizers)
+        #print(f"Numbers of runs per algorithm: {[int(2 * victories.loc[n, n]) for n in all_optimizers]}")
+        if display:
+            to_display = sorted([(2 * victories.loc[n,n], n) for n in all_optimizers], reverse=True)
+            for num, n in to_display:
+                print(n, "==>", num, "/", max([int(2 * victories.loc[n, n]) for n in all_optimizers]))
         if complete_runs_only:
             max_num = max([int(2 * victories.loc[n, n]) for n in all_optimizers])
             new_all_optimizers = [n for n in all_optimizers if int(2 * victories.loc[n, n]) == max_num]
