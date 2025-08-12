@@ -12,7 +12,7 @@ from collections import defaultdict
 import scipy.ndimage as ndimage
 
 try:
-    from bayes_opt import UtilityFunction
+    from bayes_opt import acquisition
     from bayes_opt import BayesianOptimization
 except ModuleNotFoundError:
     pass
@@ -3102,7 +3102,14 @@ try:
         def bo(self) -> BayesianOptimization:
             if self._bo is None:
                 bounds = {self._fake_function.key(i): (0.0, 1.0) for i in range(self.dimension)}
-                self._bo = BayesianOptimization(self._fake_function, bounds, random_state=self._rng)
+                kind = self.utility_kind
+                if kind == "ucb":
+                    util = acquisition.UpperConfidenceBound(kappa=self.utility_kappa,)
+                elif kind == "ei":
+                    util = acquisition.ExpectedImprovement(xi=self.utility_xi,)
+                elif kind == "poi":
+                    util = acquisition.ProbabilityOfImprovement(xi=self.utility_xi,)
+                self._bo = BayesianOptimization(self._fake_function, bounds, util, random_state=self._rng)
                 if self._init_budget is None:
                     assert self.budget is not None
                     init_budget = int(np.sqrt(self.budget))
@@ -3127,11 +3134,10 @@ try:
             return self._bo
 
         def _internal_ask_candidate(self) -> p.Parameter:
-            util = UtilityFunction(kind=self.utility_kind, kappa=self.utility_kappa, xi=self.utility_xi)
             if self.bo._queue:
                 x_probe = next(self.bo._queue)
             else:
-                x_probe = self.bo.suggest(util)  # this is time consuming
+                x_probe = self.bo.suggest()  # this is time consuming
                 x_probe = [x_probe[self._fake_function.key(i)] for i in range(len(x_probe))]
             data = self._normalizer.backward(np.asarray(x_probe))
             candidate = self.parametrization.spawn_child().set_standardized_data(data)
