@@ -1,6 +1,6 @@
 numpy>=1.24.0
 cma>=2.6.0
-bayesian-optimization==1.4.0
+bayesian-optimization>=2.0.4
 typing_extensions>=3.6.6
 pandas
 directsearch
