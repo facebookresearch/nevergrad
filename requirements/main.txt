@@ -3,5 +3,4 @@ cma>=2.6.0
 bayesian-optimization==1.4.0
 typing_extensions>=3.6.6
 pandas
-colorama==0.4.0
 directsearch
