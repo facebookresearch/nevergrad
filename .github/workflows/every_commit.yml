@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.11'
       - uses: actions/checkout@v4.1.0
       - name: restore_cache
         uses: actions/cache@v4
@@ -82,7 +82,7 @@ jobs:
     steps:
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.11'
       - uses: actions/checkout@v4.1.0
       - uses: "./.github/actions/ubuntu_restore_all"
       - name: Run mypy
@@ -98,7 +98,7 @@ jobs:
       - name: Run black
         run: |
           . venv/bin/activate
-          pip install black
+          pip install 'black==26.3.1'
           black --version
           black nevergrad --check --diff
   pytests:
@@ -106,7 +106,7 @@ jobs:
     steps:
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.11'
       - uses: actions/checkout@v4.1.0
       - uses: "./.github/actions/ubuntu_restore_all"
       - name: "[all] Run pytest"
