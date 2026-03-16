@@ -599,23 +599,6 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
         # pylint:disable=unused-argument, import-outside-toplevel
         from pymoo import optimize as pymoooptimize
 
-        from pymoo.factory import get_algorithm as get_pymoo_algorithm
-
-        # from pymoo.factory import get_reference_directions
-
-        # reference direction code for when we want to use the other MOO optimizers in Pymoo
-        # if self.algorithm in [
-        #     "rnsga2",
-        #     "nsga3",
-        #     "unsga3",
-        #     "rnsga3",
-        #     "moead",
-        #     "ctaea",
-        # ]:  # algorithms that require reference points or reference directions
-        #     the appropriate n_partitions must be looked into
-        #     ref_dirs = get_reference_directions("das-dennis", self.num_objectives, n_partitions=12)
-        #     algorithm = get_pymoo_algorithm(self.algorithm, ref_dirs)
-        # else:
         problem = _create_pymoo_problem(weakself, objective_function)
         if weakself.algorithm == "CMAES":
             from pymoo.algorithms.soo.nonconvex.cmaes import CMAES
@@ -635,7 +618,7 @@ class _PymooMinimizeBase(recaster.SequentialRecastOptimizer):
                 bipop=True,
             )
         else:
-            algorithm = get_pymoo_algorithm(weakself.algorithm)
+            algorithm = _get_pymoo_algorithm(weakself.algorithm)
         pymoooptimize.minimize(problem, algorithm, seed=weakself._initial_seed)
         return None
 
@@ -745,24 +728,7 @@ class _PymooBatchMinimizeBase(recaster.BatchRecastOptimizer):
         # pylint:disable=unused-argument, import-outside-toplevel
         from pymoo import optimize as pymoooptimize
 
-        from pymoo.factory import get_algorithm as get_pymoo_algorithm
-
-        # from pymoo.factory import get_reference_directions
-
-        # reference direction code for when we want to use the other MOO optimizers in Pymoo
-        # if self.algorithm in [
-        #     "rnsga2",
-        #     "nsga3",
-        #     "unsga3",
-        #     "rnsga3",
-        #     "moead",
-        #     "ctaea",
-        # ]:  # algorithms that require reference points or reference directions
-        #     the appropriate n_partitions must be looked into
-        #     ref_dirs = get_reference_directions("das-dennis", self.num_objectives, n_partitions=12)
-        #     algorithm = get_pymoo_algorithm(self.algorithm, ref_dirs)
-        # else:
-        algorithm = get_pymoo_algorithm(weakself.algorithm)
+        algorithm = _get_pymoo_algorithm(weakself.algorithm)
         problem = _create_pymoo_problem(weakself, objective_function, False)
         pymoooptimize.minimize(problem, algorithm, seed=weakself._initial_seed)
         return None
@@ -834,23 +800,41 @@ class PymooBatch(base.ConfiguredOptimizer):
         super().__init__(_PymooBatchMinimizeBase, locals())
 
 
+def _get_pymoo_algorithm(name: str):
+    """Instantiate a pymoo algorithm by name (replaces removed pymoo.factory.get_algorithm)."""
+    # pylint:disable=import-outside-toplevel
+    _PYMOO_ALGORITHMS = {
+        "de": "pymoo.algorithms.soo.nonconvex.de.DE",
+        "ga": "pymoo.algorithms.soo.nonconvex.ga.GA",
+        "brkga": "pymoo.algorithms.soo.nonconvex.brkga.BRKGA",
+        "nelder-mead": "pymoo.algorithms.soo.nonconvex.nelder.NelderMead",
+        "pattern-search": "pymoo.algorithms.soo.nonconvex.pattern.PatternSearch",
+        "cmaes": "pymoo.algorithms.soo.nonconvex.cmaes.CMAES",
+        "nsga2": "pymoo.algorithms.moo.nsga2.NSGA2",
+        "rnsga2": "pymoo.algorithms.moo.rnsga2.RNSGA2",
+        "nsga3": "pymoo.algorithms.moo.nsga3.NSGA3",
+        "unsga3": "pymoo.algorithms.moo.unsga3.UNSGA3",
+        "rnsga3": "pymoo.algorithms.moo.rnsga3.RNSGA3",
+        "moead": "pymoo.algorithms.moo.moead.MOEAD",
+        "ctaea": "pymoo.algorithms.moo.ctaea.CTAEA",
+    }
+    import importlib
+
+    qualname = _PYMOO_ALGORITHMS[name]
+    module_path, class_name = qualname.rsplit(".", 1)
+    module = importlib.import_module(module_path)
+    return getattr(module, class_name)()
+
+
 def _create_pymoo_problem(
     optimizer: base.Optimizer,
     objective_function: tp.Callable[[tp.ArrayLike], float],
     elementwise: bool = True,
 ):
-    kwargs = {}
-    try:
-        # pylint:disable=import-outside-toplevel
-        from pymoo.core.problem import ElementwiseProblem, Problem  # type: ignore
+    # pylint:disable=import-outside-toplevel
+    from pymoo.core.problem import ElementwiseProblem, Problem  # type: ignore
 
-        Base = ElementwiseProblem if elementwise else Problem
-    except ImportError:
-        # Used if pymoo < 0.5.0
-        # pylint:disable=import-outside-toplevel
-        from pymoo.model.problem import Problem as Base  # type: ignore
-
-        kwargs = {"elementwise_evaluation": elementwise}
+    Base = ElementwiseProblem if elementwise else Problem
 
     class _PymooProblem(Base):  # type: ignore
         def __init__(self, optimizer, objective_function):
@@ -861,7 +845,6 @@ def _create_pymoo_problem(
                 n_constr=0,  # constraints handled already by nevergrad
                 xl=-math.pi * 0.5,
                 xu=math.pi * 0.5,
-                **kwargs,
             )
 
         def _evaluate(self, X, out, *args, **kwargs):
