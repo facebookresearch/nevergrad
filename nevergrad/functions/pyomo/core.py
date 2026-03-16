@@ -9,7 +9,6 @@ import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from .. import base
 
-
 ParamDict = tp.Dict[str, p.Parameter]
 
 
@@ -32,6 +31,11 @@ def _make_pyomo_range_set_to_parametrization(
             lb, ub = ranges[0].start, ranges[0].end
             if ranges[0].step < 0:
                 lb, ub = ub, lb
+            # Convert inf/-inf to None (pyomo 6.x uses inf for unbounded ranges)
+            if lb is not None and np.isinf(lb):
+                lb = None
+            if ub is not None and np.isinf(ub):
+                ub = None
             if (lb is not None) and (not ranges[0].closed[0]):
                 lb = float(np.nextafter(lb, 1))
             if (ub is not None) and (not ranges[0].closed[1]):
@@ -58,10 +62,10 @@ def _make_pyomo_variable_to_parametrization(model_component: pyomo.Var, params: 
     # To further improve the readability function, we should find out how to represent {None: ng.p.Scalar(), 1: ng.p.Scalar()} in ng.p.Dict
     # We do not adopt nested parameterization, which will require type information between string and int.
     # Such conversion has to be done in _pyomo_obj_function_wrapper and _pyomo_constraint_wrapper, which slows down optimization.
-    if not isinstance(model_component, (pyomo.base.var.IndexedVar, pyomo.base.var.SimpleVar)):
+    if not isinstance(model_component, (pyomo.base.var.IndexedVar, pyomo.base.var.ScalarVar)):
         raise NotImplementedError  # Normally, Pyomo will create a set for the indices used by a variable
     for k, v in model_component._data.items():
-        if isinstance(v, pyomo.base.var._GeneralVarData):
+        if isinstance(v, pyomo.base.var.VarData):
             if v.is_fixed():
                 raise NotImplementedError
             if k is None:
@@ -161,19 +165,19 @@ class Pyomo(base.ExperimentFunction):
     def _pyomo_obj_function_wrapper(self, i: int, **k_model_variables: tp.Dict[str, tp.Any]) -> float:
         self._pyomo_value_assignment(k_model_variables)
         return float(
-            pyomo.value(self.all_objectives[i] * self.all_objectives[i].sense)
+            pyomo.value(self.all_objectives[i].expr) * int(self.all_objectives[i].sense)
         )  # Single objective assumption
 
     def _pyomo_constraint_wrapper(self, i: int, instru: tp.ArgsKwargs) -> bool:
         k_model_variables = instru[1]
         # Combine all constraints into single one
         self._pyomo_value_assignment(k_model_variables)
-        if isinstance(self.all_constraints[i], pyomo.base.constraint.SimpleConstraint):
-            return bool(pyomo.value(self.all_constraints[i].expr(self._model_instance)))
+        if isinstance(self.all_constraints[i], pyomo.base.constraint.ScalarConstraint):
+            return bool(pyomo.value(self.all_constraints[i].expr))
         elif isinstance(self.all_constraints[i], pyomo.base.constraint.IndexedConstraint):
             ret = True
             for _, c in self.all_constraints[i].items():
-                ret = ret and pyomo.value(c.expr(self._model_instance))
+                ret = ret and pyomo.value(c.expr)
                 if not ret:
                     break
             return ret
