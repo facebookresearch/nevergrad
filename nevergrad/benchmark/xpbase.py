@@ -27,7 +27,6 @@ from ..optimization.optimizerlib import (
 )  # import from optimizerlib so as to fill it
 from . import execution
 
-
 registry: decorators.Registry[tp.Callable[..., tp.Iterator["Experiment"]]] = decorators.Registry()
 
 
@@ -131,7 +130,7 @@ def create_seed_generator(seed: tp.Optional[int]) -> tp.Iterator[tp.Optional[int
     """
     generator = None if seed is None else np.random.RandomState(seed=seed)
     while True:
-        yield None if generator is None else generator.randint(2**32, dtype=np.uint32)  # type: ignore
+        yield None if generator is None else int(generator.randint(2**32, dtype=np.uint32))  # type: ignore
 
 
 class Experiment:
