@@ -174,7 +174,8 @@ def learn_on_k_best(
         DiscreteLenglerOnePlusOne = registry["DiscreteLenglerOnePlusOne"]
 
         def loss_function_sm(x):
-            return float(model.predict(trans(np.asarray(x, dtype=X[0].dtype).flatten()[None, :])))
+            x = np.asarray(x, dtype=X[0].dtype).flatten()[None, :]
+            return model.predict(trans(x)).item()
 
         for cls in (
             (Powell, DE) if algorithm != "image" else (DiscreteLenglerOnePlusOne,)
