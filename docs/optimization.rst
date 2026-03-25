@@ -1,7 +1,9 @@
 How to perform optimization
 ===========================
 
-**By default, all optimizers assume a centered and reduced prior at the beginning of the optimization (i.e. 0 mean and unitary standard deviation). They are however able to find solutions far from this initial prior.**
+.. note::
+
+  By default, all optimizers assume a centered and reduced prior at the beginning of the optimization (ie. 0 mean and unitary standard deviation). They are however able to find solutions far from this initial prior.
 
 Basic example
 -------------
@@ -16,8 +18,7 @@ Minimizing a function using an optimizer (here :code:`NgIohTuned`, our adaptativ
 
 :code:`parametrization=n` is a shortcut to state that the function has only one variable, continuous, of dimension :code:`n`: :code:`ng.p.Array(shape=(n,))`.
 
-**Important**: Make sure to check the :ref:`Parametrization section <parametrizing>` for more complex parametrizations examples,
-and :ref:`Parametrization API section <parametrization_ref>` for the full list of options. Below are a few more advanced cases.
+**Important**: Make sure to check the :ref:`Parametrization section <parametrizing>` for more complex parametrizations examples, and :ref:`Parametrization API section <parametrization_ref>` for the full list of options. Below are a few more advanced cases.
 
 Defining the parametrization (:code:`instrum`) as follows in the code sample will instead optimize on both :code:`x` (continuous, dimension 2, bounded between -12 and 12) and :code:`y` (continuous, dimension 1).
 
@@ -172,14 +173,16 @@ Or, if you work with minimize, you can also replace
     optimizer.minimize(loss_function)
 
 by
+
 .. code-block:: python
 
     optimizer.minimize(loss_function, constraint_violations)
 
 where constraint_violations maps a candidate to a vector of constraint violations.
 
-**Warning: constraint_violation is by far most frequently the best solution. However, there is also register_cheap_constraint below, which can be useful in some specific cases.
-And then, please use the float-valued version, and never the boolean one unless there is really no solution for defining the float-valued version.**
+.. note::
+
+    `constraint_violation` is by far the most effective and recommended approach for handling constraints. While `register_cheap_constraint` is available and may be useful in certain specific cases, it is generally less robust. Always define your constraints using the float-valued form (returning a violation magnitude). Avoid using the boolean form unless a float-valued version is not possible.
 
 Nevergrad has, also, a mechanism for cheap constraints.
 "Cheap" means that we do not try to reduce the number of calls to such constraints.
@@ -264,14 +267,16 @@ We can then minimize as usual:
 Multiobjective minimization with Nevergrad
 ------------------------------------------
 
-Multiobjective minimization is a **work in progress** in :code:`nevergrad`. It is:
+.. note::
 
- - **not stable**: the API may be updated at any time, hopefully to make it simpler and more intuitive.
- - **not robust**: there are probably corner cases we have not investigated yet.
- - **not scalable**: it is not yet clear how the current version will work with large number of losses, or large budget. For now the features have been implemented without time complexity considerations.
- - **not optimal**: this currently transforms multiobjective functions into monoobjective functions, hence losing some structure and making the function dynamic, which some optimizers are not designed to work on.
+    Multiobjective minimization is a **work in progress** in :code:`nevergrad`:
 
-In other words, use it at your own risk ;) and provide feedbacks (both positive and negative) if you have any!
+        - **not stable**: the API may be updated at any time, hopefully to make it simpler and more intuitive.
+        - **not robust**: there are probably corner cases we have not investigated yet.
+        - **not scalable**: it is not yet clear how the current version will work with large number of losses, or large budget. For now the features have been implemented without time complexity considerations.
+        - **not optimal**: this currently transforms multiobjective functions into monoobjective functions, hence losing some structure and making the function dynamic, which some optimizers are not designed to work on.
+
+    In other words, use it at your own risk ;) and provide feedback (both positive and negative) if you have any!
 
 To perform multiobjective optimization, you can just provide :code:`tell` with the results as an array or list of floats:
 

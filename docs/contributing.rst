@@ -1,26 +1,80 @@
 Contributing to Nevergrad
 #########################
 
-General considerations
-======================
-
 We want to make contributing to this project as easy and transparent as possible.
 
 Whether you want to contribute or not, don't hesitate to join `Nevergrad users' Facebook group <https://www.facebook.com/groups/nevergradusers/>`_
 
 
-Our Development Process
------------------------
+Development Steps
+=================
 
-To install :code:`nevergrad` in development mode (if you wish to contribute to it), clone the repository and run :code:`pip install -e .[all]` from inside the repository folder,
-or :code:`pip install -e '.[all]'` if you use :code:`zsh`. If the install fails because of :code:`torch`, you can preinstall it with the instructions `on Pytorch website <https://pytorch.org/get-started/locally/>`_
-and rerun :code:`nevergrad`'s installation.
+To install ``nevergrad`` in development mode (if you wish to contribute to it):
 
-Most of the code is covered by unit tests. You can run them with:
+    - Fork the repository on GitHub: https://github.com/facebookresearch/nevergrad
 
-.. code-block:: bash
+    - Clone your fork and add the nevergrad repository as upstream
 
-    pytest nevergrad --cov=nevergrad
+    - Create a python virtual environment
+
+    - Install ``main.txt`` and ``dev.txt`` dependencies with pip
+
+    - Install ``nevergrad`` with pip as *development mode install* (aka. *editable install*)
+
+      .. code-block:: bash
+
+        git clone https://github.com/<your-username>/nevergrad.git
+        cd nevergrad
+        git remote add upstream https://github.com/facebookresearch/nevergrad.git
+        python -m venv .venv
+        source .venv/bin/activate
+        pip install -r requirements/main.txt -r requirements/dev.txt
+        pip install -e '.[all]'
+
+    .. note::
+
+        If the install fails due to ``torch``, install it manually following the instructions at https://pytorch.org/get-started/locally/
+
+    - Create a Feature Branch (easier with Github Desktop application)
+
+      .. code-block:: bash
+
+        git checkout -b feature/my-awesome-contribution
+
+    - Make your changes to ``nevergrad/.../*.py``
+
+    - Format Code
+
+      .. code-block:: bash
+
+        black nevergrad
+
+    - **Test !**
+
+      .. code-block:: bash
+
+        pytest nevergrad --cov=nevergrad
+
+    - Commit and Push (also easier with Github Desktop application)
+
+      .. code-block:: bash
+
+          git add .
+          git commit -m "Add feature XYZ to module ABC"
+          git push origin feature/my-awesome-contribution
+
+    - Open a Pull Request on github.com. **Make sure the base is ``facebookresearch/nevergrad:main`` and the compare branch is your feature branch.**
+
+    - Stay in sync with upstream (easier with github.com and Github Desktop application)
+
+      .. code-block:: bash
+
+        git checkout main
+        git pull upstream main
+        git push origin main
+        git checkout feature/my-awesome-contribution
+        git rebase main
+
 
 You can then run :code:`mypy` on :code:`nevergrad` with:
 

@@ -1,4 +1,6 @@
 
+# Guiding image generation with Nevergrad
+
 People love image generators. However, the results is frequently not perfect.
 
 Related paper: https://dl.acm.org/doi/abs/10.1145/3583131.3590471 (nominated for best paper award at Gecco)

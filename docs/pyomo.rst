@@ -1,5 +1,5 @@
-Examples - Working with Pyomo model
-=========================================
+Working with Pyomo model
+========================
 
 Pyomo is an open source software package for modeling and solving mathematical programs in Python [Hart2011]_.
 This section gives an example of how to optimize Pyomo models using Nevergrad.

@@ -1,4 +1,6 @@
 
+# Retrofitting with Nevergrad {bdg-info}`NEW`
+
 Comments welcome here: https://www.facebook.com/groups/nevergradusers/
 ## What is retrofitting ?
 

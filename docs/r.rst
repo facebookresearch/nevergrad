@@ -1,7 +1,7 @@
 .. _r:
 
-Examples - Nevergrad for R
-==========================
+Nevergrad for R
+===============
 
 
 .. code-block:: R

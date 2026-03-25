@@ -5,7 +5,6 @@
 
 from ..parametrization import mutation as mutations
 from ..parametrization._datalayers import Int as Int
-from . import constraints as constraints
+from .constraints import Constraint, BisectionProjectionConstraint
 
-
-__all__ = ["mutations", "constraints", "Int"]
+__all__ = ["mutations", "constraints", "Int", "Constraint", "BisectionProjectionConstraint"]

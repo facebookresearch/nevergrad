@@ -1,5 +1,5 @@
-Examples of benchmarks
-======================
+Benchmarks
+==========
 
 The following figures are examples of algorithm benchmarks which can be generated very easily from the platform
 In all examples, we use independent experiments for the different x-values; so that consistent rankings between methods, over several x-values, have a statistical meaning.
