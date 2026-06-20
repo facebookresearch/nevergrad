@@ -148,8 +148,8 @@ def c_bas(A,V,h):
 
 def marche(a,b,p,n,x):
     from scipy.linalg import toeplitz
-    l=np.zeros(n,dtype=np.complex)
-    m=np.zeros(n,dtype=np.complex)
+    l=np.zeros(n,dtype=complex)
+    m=np.zeros(n,dtype=complex)
     tmp=1/(2*np.pi*np.arange(1,n))*(np.exp(-2*1j*np.pi*p*np.arange(1,n))-1)*np.exp(-2*1j*np.pi*np.arange(1,n)*x)
     l[1:n]=1j*(a-b)*tmp
     l[0]=p*a+(1-p)*b
@@ -194,7 +194,7 @@ def morpho(X):
     l=lam/d
     k0=2*np.pi/l
     P,V=homogene(k0,0,pol,1,n)
-    S=np.block([[np.zeros([n,n]),np.eye(n,dtype=np.complex)],[np.eye(n),np.zeros([n,n])]])
+    S=np.block([[np.zeros([n,n]),np.eye(n,dtype=complex)],[np.eye(n),np.zeros([n,n])]])
     for j in range(0,n_motifs):
         Pc,Vc=creneau(k0,0,pol,e2,1,a[j],n,x0[j])
         S=cascade(S,interface(P,Pc))
@@ -213,7 +213,7 @@ def morpho(X):
     for lo in lam:
         k0=2*np.pi/lo
         P,V=homogene(k0,0,pol,1,n)
-        S=np.block([[np.zeros([n,n],dtype=np.complex),np.eye(n)],[np.eye(n),np.zeros([n,n])]])
+        S=np.block([[np.zeros([n,n],dtype=complex),np.eye(n)],[np.eye(n),np.zeros([n,n])]])
         for j in range(0,n_motifs):
             Pc,Vc=creneau(k0,0,pol,e2,1,a[j],n,x0[j])
             S=cascade(S,interface(P,Pc))
@@ -248,7 +248,7 @@ def neomorpho(X):
     l=lam/d
     k0=2*np.pi/l
     P,V=homogene(k0,0,pol,1,n)
-    S=np.block([[np.zeros([n,n]),np.eye(n,dtype=np.complex)],[np.eye(n),np.zeros([n,n])]])
+    S=np.block([[np.zeros([n,n]),np.eye(n,dtype=complex)],[np.eye(n),np.zeros([n,n])]])
     for j in range(0,n_motifs):
         Pc,Vc=creneau(k0,0,pol,e2,1,a[j],n,x0[j])
         S=cascade(S,interface(P,Pc))
@@ -296,7 +296,7 @@ def Nmorpho(X):
     alpha0 = k0 * np.sin(theta*np.pi/180.)
 
     pol=1
-    S=np.block([[np.zeros([n,n]),np.eye(n,dtype=np.complex)],[np.eye(n),np.zeros([n,n])]])
+    S=np.block([[np.zeros([n,n]),np.eye(n,dtype=complex)],[np.eye(n),np.zeros([n,n])]])
     P,V=homogene(k0,alpha0,pol,e1,n)
     for k in range(0,n_layers):
         bloc = np.array([x[k,1:3]])
@@ -399,7 +399,7 @@ def psplit(X):
     alpha0 = k0 * np.sin(theta*np.pi/180.)
 
     pol=0
-    S=np.block([[np.zeros([n,n]),np.eye(n,dtype=np.complex)],[np.eye(n),np.zeros([n,n])]])
+    S=np.block([[np.zeros([n,n]),np.eye(n,dtype=complex)],[np.eye(n),np.zeros([n,n])]])
     P,V=homogene(k0,alpha0,pol,e1,n)
     V_air = V
     for k in range(0,n_layers):
@@ -415,7 +415,7 @@ def psplit(X):
 #    print(TE01,Vc[nmod+1])
 
     pol=1.
-    S=np.block([[np.zeros([n,n]),np.eye(n,dtype=np.complex)],[np.eye(n),np.zeros([n,n])]])
+    S=np.block([[np.zeros([n,n]),np.eye(n,dtype=complex)],[np.eye(n),np.zeros([n,n])]])
     P,V=homogene(k0,alpha0,pol,1,n)
     V_air = V
     for k in range(0,n_layers):
