@@ -27,7 +27,6 @@ from ..optimization.optimizerlib import (
 )  # import from optimizerlib so as to fill it
 from . import execution
 
-
 registry: decorators.Registry[tp.Callable[..., tp.Iterator["Experiment"]]] = decorators.Registry()
 
 
@@ -66,7 +65,13 @@ class OptimizerSettings:
 
     @property
     def name(self) -> str:
-        return self.optimizer if isinstance(self.optimizer, str) else repr(self.optimizer)
+        try:
+            try:
+                return self.optimizer.name  # type: ignore
+            except:
+                return self.optimizer.__name__  # type: ignore
+        except:
+            return self.optimizer if isinstance(self.optimizer, str) else repr(self.optimizer)
 
     @property
     def batch_mode(self) -> bool:
@@ -125,7 +130,7 @@ def create_seed_generator(seed: tp.Optional[int]) -> tp.Iterator[tp.Optional[int
     """
     generator = None if seed is None else np.random.RandomState(seed=seed)
     while True:
-        yield None if generator is None else generator.randint(2**32, dtype=np.uint32)
+        yield None if generator is None else int(generator.randint(2**32, dtype=np.uint32))  # type: ignore
 
 
 class Experiment:
@@ -154,7 +159,11 @@ class Experiment:
         batch_mode: bool = True,
         seed: tp.Optional[int] = None,
         constraint_violation: tp.Optional[ngtp.ArrayLike] = None,
+        penalize_violation_at_test: bool = True,
+        suggestions: tp.Optional[ngtp.ArrayLike] = None,
     ) -> None:
+        self.penalize_violation_at_test = penalize_violation_at_test
+        self.suggestions = suggestions
         assert isinstance(function, fbase.ExperimentFunction), (
             "All experiment functions should " "derive from ng.functions.ExperimentFunction"
         )
@@ -168,9 +177,9 @@ class Experiment:
             optimizer=optimizer, num_workers=num_workers, budget=budget, batch_mode=batch_mode
         )
         self.result = {"loss": np.nan, "elapsed_budget": np.nan, "elapsed_time": np.nan, "error": ""}
-        self._optimizer: tp.Optional[
-            obase.Optimizer
-        ] = None  # to be able to restore stopped/checkpointed optimizer
+        self._optimizer: tp.Optional[obase.Optimizer] = (
+            None  # to be able to restore stopped/checkpointed optimizer
+        )
 
         # make sure the random_state of the base function is created, so that spawning copy does not
         # trigger a seed for the base function, but only for the copied function
@@ -225,11 +234,14 @@ class Experiment:
         self.result["loss"] = pfunc.evaluation_function(*opt.pareto_front())
         if (
             self.constraint_violation
-            and np.sum([f(opt.recommend().value) for f in self.constraint_violation]) > 0  # type: ignore
+            and np.max([f(opt.recommend().value) for f in self.constraint_violation]) > 0  # type: ignore
             or len(self.function.parametrization._constraint_checkers) > 0
             and not opt.recommend().satisfies_constraints(pfunc.parametrization)
         ):
-            self.result["loss"] += 1e9  # type: ignore
+            # print(f"{len(self.constraint_violation)} ==> cv violation!!!!")
+            # print(f"{len(self.function.parametrization._constraint_checkers)} ==> cv checker!!!!")
+            if self.penalize_violation_at_test:
+                self.result["loss"] += 1e9  # type: ignore
         self.result["elapsed_budget"] = num_calls
         if num_calls > self.optimsettings.budget:
             raise RuntimeError(
@@ -278,13 +290,23 @@ class Experiment:
             try:
                 # call the actual Optimizer.minimize method because overloaded versions could alter the worklflow
                 # and provide unfair comparisons  (especially for parallelized settings)
+                # import signal
+                # def handler(signum, frame):
+                #    raise Exception("Time exceeded!")
+                # signal.signal(signal.SIGALRM, handler)
+                # signal.alarm(int(2.8 * 3600 * 24))
+                if self.suggestions is not None:
+                    for s in self.suggestions:
+                        self._optimizer.suggest(s)
                 obase.Optimizer.minimize(
                     self._optimizer,
                     pfunc,
                     batch_mode=executor.batch_mode,
                     executor=executor,
                     constraint_violation=self.constraint_violation,
+                    max_time=3600 * 24 * 2.5,
                 )
+                # signal.alarm(0)
             except Exception as e:  # pylint: disable=broad-except
                 self._log_results(pfunc, t0, self._optimizer.num_ask)
                 raise e

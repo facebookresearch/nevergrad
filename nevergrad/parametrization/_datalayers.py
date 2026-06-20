@@ -147,7 +147,7 @@ class Modulo(BoundLayer):
 
     def __init__(self, module: tp.Any) -> None:
         super().__init__(lower=0, upper=module)
-        if not isinstance(module, (np.ndarray, np.float_, np.int_, float, int)):
+        if not isinstance(module, (np.ndarray, np.float64, np.int_, float, int)):
             raise TypeError(f"Unsupported type {type(module)} for module")
         self._module = module
 

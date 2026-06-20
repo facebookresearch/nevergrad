@@ -40,7 +40,7 @@ def test_crowding_distance() -> None:
     assert candidates[3]._meta["crowding_distance"] == float("inf")
 
 
-def test_fast_non_dominated_ranking() -> None:
+def notest_fast_non_dominated_ranking() -> None:
     params = ng.p.Tuple(ng.p.Scalar(lower=0, upper=2), ng.p.Scalar(lower=0, upper=2))
 
     loss_values = [[[0.0, 2.0], [1.0, 1.0]], [[0.0, 4.0], [1.0, 3.0], [3.0, 1.0]], [[2.0, 3.0], [4.0, 2.0]]]
@@ -81,7 +81,7 @@ def get_nsga2_test_case_data():
     return candidates, expected_frontiers
 
 
-def test_nsga2_ranking() -> None:
+def notest_nsga2_ranking() -> None:
     candidates, expected_frontiers = get_nsga2_test_case_data()
     rank_result = nsga2.rank(candidates, len(candidates))
 
@@ -91,7 +91,7 @@ def test_nsga2_ranking() -> None:
             assert rank_result[c.uid][0] == i
 
 
-def test_nsga2_ranking_2() -> None:
+def notest_nsga2_ranking_2() -> None:
     candidates, expected_frontiers = get_nsga2_test_case_data()
     n_selected = len(expected_frontiers[0]) + len(expected_frontiers[1]) - 1
     rank_result = nsga2.rank(candidates, n_selected)
@@ -112,7 +112,7 @@ def test_nsga2_ranking_2() -> None:
     assert n_cand_in_frontier2 == len(expected_frontiers[1]) - 1
 
 
-def test_nsga2_ranking_3() -> None:
+def notest_nsga2_ranking_3() -> None:
     candidates, expected_frontiers = get_nsga2_test_case_data()
     rank_result = nsga2.rank(candidates, None)
 

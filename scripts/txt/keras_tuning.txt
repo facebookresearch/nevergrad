@@ -1,0 +1,11 @@
+Tuning of machine learning models based on the Keras library.
+
+budget150
+budget500
+datasetauto-mpg
+datasetdiabetes
+datasetkerasBoston
+datasetred-wine
+datasetwhite-wine
+workers150
+workers500

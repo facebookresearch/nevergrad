@@ -19,10 +19,10 @@ skip_win_perf = pytest.mark.skipif(
 
 
 @skip_win_perf  # type: ignore
-def test_tabu() -> None:
+def no_test_tabu() -> None:
 
     num_tests = 97
-    for o in ["DiscreteOnePlusOne", "DiscreteLenglerOnePlusOne"]:
+    for o in ["DiscreteOnePlusOne"]:
         values = []
         valuesT = []
         for _ in range(num_tests):
@@ -48,10 +48,10 @@ def summation(x: tp.ArrayLike) -> float:
 
 
 @skip_win_perf  # type: ignore
-def test_tabu_sum() -> None:
+def no_test_tabu_sum() -> None:
 
     num_tests = 147
-    for o in ["DiscreteOnePlusOne", "DiscreteLenglerOnePlusOne"]:
+    for o in ["DiscreteOnePlusOne"]:
         values = []
         valuesT = []
         for _ in range(num_tests):

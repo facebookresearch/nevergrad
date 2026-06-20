@@ -29,8 +29,8 @@ def launch(
         df = core.compute(experiment, cap_index=cap_index, seed=seed)
     else:
         with futures.ProcessPoolExecutor(max_workers=num_workers) as executor:
-            df = core.compute(
-                experiment, seed=seed, cap_index=cap_index, executor=executor, num_workers=num_workers
+            df = core.compute(  # type: ignore
+                experiment, seed=seed, cap_index=cap_index, executor=executor, num_workers=num_workers  # type: ignore
             )
     # save data to csv
     try:

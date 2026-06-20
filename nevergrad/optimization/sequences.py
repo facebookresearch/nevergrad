@@ -3,8 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""Samplers in [0,1]^d.
-"""
+"""Samplers in [0,1]^d."""
 
 import numpy as np
 from numpy.random import RandomState
@@ -144,17 +143,17 @@ class HaltonPermutationGenerator:
         self.scrambling = scrambling
         self.primes = _get_first_primes(dimension).tolist()
         self.seed = random_state.randint(2**32, dtype=np.uint32)
-        self.fulllist = np.arange(self.primes[-1]) if self.primes else []
+        self.fulllist = np.arange(self.primes[-1]) if self.primes else []  # type: ignore
 
     def get_permutations_generator(self) -> tp.Iterator[tp.ArrayLike]:
         if self.scrambling:
             randgen = np.random.RandomState(seed=self.seed)
             return (
-                np.concatenate(([0], randgen.choice(self.fulllist[1:p], p - 1, replace=False)), axis=0)
+                np.concatenate(([0], randgen.choice(self.fulllist[1:p], p - 1, replace=False)), axis=0)  # type: ignore
                 for p in self.primes
             )
         else:
-            return (self.fulllist[:p] for p in self.primes)
+            return (self.fulllist[:p] for p in self.primes)  # type: ignore
 
 
 @samplers.register
@@ -206,7 +205,7 @@ class HammersleySampler(HaltonSampler):
 class Rescaler:
     def __init__(self, points: tp.Iterable[tp.ArrayLike]) -> None:
         iterp = iter(points)
-        self.sample_mins = np.array(next(iterp), copy=False)
+        self.sample_mins = np.asarray(next(iterp))
         self.sample_maxs = self.sample_mins
         for point in iterp:
             self.sample_mins = np.minimum(self.sample_mins, point)
@@ -217,6 +216,6 @@ class Rescaler:
         ), f"Non-positive epsilon={self.epsilon} from mins {self.sample_mins} and maxs {self.sample_maxs}"
 
     def apply(self, point: tp.ArrayLike) -> np.ndarray:
-        point = np.array(point, copy=False)
+        point = np.asarray(point)
         factor = (1 - 2 * self.epsilon) / (self.sample_maxs - self.sample_mins)
         return self.epsilon + factor * (point - self.sample_mins)  # type: ignore

@@ -85,11 +85,11 @@ class GymMulti(ExperimentFunction):
 
     @staticmethod
     def get_env_names() -> tp.List[str]:
-        import gym_anm  # noqa
+        # import gym_anm  # noqa
 
         gym_env_names = []
         max_displays = 10
-        for e in gym.envs.registry.all():
+        for e in gym.envs.registry.values():  # .all():
             try:
                 assert not any(
                     x in str(e.id)
@@ -141,7 +141,7 @@ class GymMulti(ExperimentFunction):
         return env
 
     def create_env(self) -> tp.Any:
-        env = gym.make(self.short_name if "LANM" not in self.short_name else "ANM6Easy-v0")
+        env = gym.make(self.short_name)
         try:
             env.reset()
         except:
@@ -150,7 +150,7 @@ class GymMulti(ExperimentFunction):
 
     def __init__(
         self,
-        name: str = "ANM6Easy-v0",
+        name: str = "CartPole-v0",
         control: str = "conformant",
         neural_factor: tp.Optional[int] = 1,
         randomized: bool = True,
@@ -485,9 +485,11 @@ class GymMulti(ExperimentFunction):
         for simulation_index in range(num_simulations):
             loss += self.gym_simulate(
                 x,
-                seed=simulation_index
-                if not self.randomized
-                else self.parametrization.random_state.randint(500000),
+                seed=(
+                    simulation_index
+                    if not self.randomized
+                    else self.parametrization.random_state.randint(500000)
+                ),
                 limited_fidelity=limited_fidelity,
             )
         return loss / num_simulations

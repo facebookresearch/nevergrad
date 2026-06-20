@@ -1,0 +1,23 @@
+Tuning in a single pass (one-shot) of scikit learn models.
+
+budget150
+budget500
+datasetartificial
+datasetartificialcos
+datasetartificialsquare
+datasetauto-mpg
+datasetboston
+datasetdiabetes
+datasetred-wine
+datasetwhite-wine
+depth
+dimension1
+dimension11
+dimension2
+dimension3
+dimension5
+dimensionnan
+regressormlp
+tree
+workers150
+workers500

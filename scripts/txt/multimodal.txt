@@ -1,0 +1,22 @@
+Multimodal artificial problems.
+
+budget10000
+budget100000
+budget3000
+budget30000
+dimension150
+dimension18
+dimension25
+dimension3
+dimensions25
+dimensions3
+nameackley
+namedeceptivemultimodal
+namegriewank
+namehm
+namelunacek
+namerastrigin
+namerosenbrock
+variables0
+variables125
+variables15

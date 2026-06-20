@@ -1,0 +1,8 @@
+verysmall photonics
+bounding methodclipping
+bounding methodtanh
+budget10
+budget100
+budget1000
+namecf photosic realistic
+namecf photosic reference

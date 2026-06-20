@@ -1,0 +1,7 @@
+Very small benchmark for photonics, 2nd category of parametrizations.
+
+budget10
+budget100
+budget1000
+methodclipping
+methodtanh

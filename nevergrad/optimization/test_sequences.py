@@ -83,7 +83,7 @@ def test_rescaler_on_hammersley() -> None:
     samples2 = list(sampler)
     sampler.reinitialize()
     np.testing.assert_array_equal(
-        samples, samples2, "Not repeatable"
+        samples, samples2, "Not repeatable"  # type: ignore
     )  # test repeatability of hammersley first
     rescaler = sequences.Rescaler(sampler)
     sampler.reinitialize()

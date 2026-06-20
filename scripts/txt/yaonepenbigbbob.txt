@@ -1,0 +1,37 @@
+yaonepenbigbbob
+block dimension10
+block dimension2
+block dimension50
+budget160000
+budget320000
+budget40000
+budget80000
+dimension10
+dimension2
+dimension50
+nameackley
+namealtcigar
+namealtellipsoid
+namebentcigar
+namebucherastrigin
+namecigar
+namedeceptiveillcond
+namedeceptivemultimodal
+namedeceptivepath
+namediscus
+namedoublelinearslope
+nameellipsoid
+namegriewank
+namehm
+namelunacek
+namemultipeak
+namerastrigin
+namerosenbrock
+namesphere
+namestepdoublelinearslope
+namestepellipsoid
+rotationFalse
+rotationTrue
+useful dimensions10
+useful dimensions2
+useful dimensions50

@@ -1,0 +1,24 @@
+Counterpart of YABBOB with very low budget.
+
+budget10
+budget20
+budget40
+dimension10
+dimension2
+dimension50
+dimensions10
+dimensions2
+dimensions50
+nameackley
+namealtcigar
+namealtellipsoid
+namedeceptiveillcond
+namedeceptivemultimodal
+namedeceptivepath
+namediscus
+namedoublelinearslope
+namegriewank
+namehm
+namemultipeak
+rotationFalse
+rotationTrue

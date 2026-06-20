@@ -18,7 +18,7 @@ You should define how it must be instrumented, i.e. what are the arguments you w
 
     import nevergrad as ng
     # instrument learning rate and number of layers, keep arg3 to 3 and arg4 to 4
-    lr = ng.p.Log(a_min=0.0001, a_max=1)  # log distributed between 0.001 and 1
+    lr = ng.p.Log(lower=0.0001, upper=1)  # log distributed between 0.001 and 1
     num_layers = ng.p.TransitionChoice([4, 5, 6])
     parametrization = ng.p.Instrumentation(lr, num_layers, 3., arg4=4)
 
@@ -303,10 +303,17 @@ If you want to run Open AI Gym, see `One-line for learning state-of-the-art Open
 Examples from our external users
 --------------------------------
 
-Nevergrad is integrated in `Ray/Tune <https://docs.ray.io/en/master/_modules/ray/tune/suggest/nevergrad.html>`_, Berkeley AI Research library for parameter tuning .
-
-Nevergrad is a plugin in `Hydra <https://hydra.cc/docs/next/plugins/nevergrad_sweeper/>`_ Facebook's parameter sweeping library.
+Nevergrad is a plugin in `Hydra <https://hydra.cc/docs/plugins/nevergrad_sweeper/>`_ Facebook's parameter sweeping library.
 
 Nevergrad is interfaced in `IOH Profiler <https://iohprofiler.liacs.nl/>`_, a tool from Univ. Leiden, CNRS, Sorbonne univ and Tel Hai college for profiling optimization algorithms.
 
 Nevergrad is interfaced in `MixSimulator <https://github.com/Foloso/MixSimulator/>`_, a useful tool to get the optimal parameters for an electrical mix.
+
+
+Nevergrad is also used for `Guiding latent image generation <https://github.com/facebookresearch/nevergrad/blob/main/docs/examples/guiding/Guiding%20image%20generation%20with%20Nevergrad.md/>`_.
+
+And for `Increasing diversity in image generation <https://github.com/facebookresearch/nevergrad/blob/main/docs/examples/diversity/Diversity%20in%20image%20generation%20with%20Nevergrad.md/>`_.
+
+And for the `Detection of fake images <https://github.com/facebookresearch/nevergrad/blob/main/docs/examples/lognormal/Lognormal%20mutations%20in%20Nevergrad.md/>`_.
+
+And for `Retrofitting <https://github.com/facebookresearch/nevergrad/blob/main/docs/examples/retrofitting/Retrofitting%20with%20Nevergrad.md>`_.

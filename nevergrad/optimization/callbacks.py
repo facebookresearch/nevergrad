@@ -161,7 +161,7 @@ class ParametersLogger:
             data["#parents_uids"] = candidate.parents_uids
         for name, param in helpers.flatten(candidate, with_containers=False, order=1):
             val = param.value
-            if isinstance(val, (np.float_, np.int_, np.bool_)):
+            if isinstance(val, (np.float64, np.int_, np.bool_)):
                 val = val.item()
             if inspect.ismethod(val):
                 val = repr(val.__self__)  # show mutation class
@@ -347,6 +347,11 @@ class EarlyStopping:
         """Early stop when max_duration seconds has been reached (from the first ask)"""
         return cls(_DurationCriterion(max_duration))
 
+    @classmethod
+    def no_improvement_stopper(cls, tolerance_window: int) -> "EarlyStopping":
+        """Early stop when loss didn't reduce during tolerance_window asks"""
+        return cls(_LossImprovementToleranceCriterion(tolerance_window))
+
 
 class _DurationCriterion:
     def __init__(self, max_duration: float) -> None:
@@ -357,3 +362,25 @@ class _DurationCriterion:
         if np.isinf(self._start):
             self._start = time.time()
         return time.time() > self._start + self._max_duration
+
+
+class _LossImprovementToleranceCriterion:
+    def __init__(self, tolerance_window: int) -> None:
+        self._tolerance_window: int = tolerance_window
+        self._best_value: tp.Optional[np.ndarray] = None
+        self._tolerance_count: int = 0
+
+    def __call__(self, optimizer: base.Optimizer) -> bool:
+        best_param = optimizer.provide_recommendation()
+        if best_param is None or (best_param.loss is None and best_param._losses is None):
+            return False
+        best_last_losses = best_param.losses
+        if self._best_value is None:
+            self._best_value = best_last_losses
+            return False
+        if self._best_value <= best_last_losses:
+            self._tolerance_count += 1
+        else:
+            self._tolerance_count = 0
+            self._best_value = best_last_losses
+        return self._tolerance_count > self._tolerance_window

@@ -1,0 +1,38 @@
+yamegapenhdbbob
+block dimension100
+block dimension1000
+block dimension3000
+budget12800
+budget200
+budget3200
+budget50
+budget800
+dimension100
+dimension1000
+dimension3000
+nameackley
+namealtcigar
+namealtellipsoid
+namebentcigar
+namebucherastrigin
+namecigar
+namedeceptiveillcond
+namedeceptivemultimodal
+namedeceptivepath
+namediscus
+namedoublelinearslope
+nameellipsoid
+namegriewank
+namehm
+namelunacek
+namemultipeak
+namerastrigin
+namerosenbrock
+namesphere
+namestepdoublelinearslope
+namestepellipsoid
+rotationFalse
+rotationTrue
+useful dimensions100
+useful dimensions1000
+useful dimensions3000

@@ -1,0 +1,187 @@
+\documentclass{article}
+
+
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+
+\def\E{\mathbb{E}}
+\begin{document}
+
+\title{Dagsthuloid benchmarking}
+%\author{OT, Photonics guys, Keras/mltuning guys, D. people, INFRA people}
+
+\maketitle
+
+
+\begin{abstract}
+%          We present a massive benchmnarking effort, and check what are the unexpected outcomes.
+%          We get the following results:
+%          \begin{itemize}
+%          \item Quasi-opposite sampling turns out to be excellent\cite{quasiopposite}. Its adaptation to Particle Swarm
+%          Optimization (as opposed to in DE in the original article) also performs well.
+%          \item Optimization wizards, automatically selecting algorithms in a wide range of methods, do perform well.
+%          \item SMAC got better results than other Bayesian Optimization methods.
+%          \item It is easy to completely modify the results by changing the distribution of optima, in particular its scaling
+%          (close to zero, or close to the boundary of the domain). We therefore include a lot of different benchmarks with
+%          different scalings, and algorithms can not be re-parametrized for each specific benchmark.
+%          \item Tuning a criterion is also a simple solution for completely changing results. Therefore we consider two
+%          parameter-free criteria, namely normalized simple regret and frequency of outperforming.
+%          \end{itemize}
+% thx to Ofer Shir, Thomas B\"ack, Vanessa Volz, Mariapia Marchi, Hao Wang.
+\end{abstract}
+\tableofcontents
+
+\section{Introduction}
+
+%    Benchmarking is a critical issue: recent news on machine learning papers about black-box optimization show that poorly reproducible benchmarking is detrimental to science.  A discussion of poor reproducibility in deep-learning assisted optimization is available in \cite{rlgoogle}; see also \cite{ecnassurvey,repronas,pham2018efficient,real2019regularized} showing how some simple methods might, in spite of promising claims, outperform heavy GPU-based black-box optimization methods. Also, \cite{leakage} mentions various examples of results difficult to reproduce, in general, in the machine learning community.
+
+%n artificial benchmarking platforms, some talks pointed out the importance of the distribution of optima. 
+%Therefore, we propose parameters of the distribution of optima, in the PBBOB (parametric BBOB) benchmark.
+
+%  Naming: “oid” means “similar to”. The benchmark is called Dagstuhloid because it is inspired by Dagstuhl talks. The responsibility is entirely ours, though.
+
+\subsection{URLs: finding this on WWW}
+The main place for discussing the Dagstuhloid benchmark is \url{https://www.facebook.com/groups/nevergradusers/}. 
+
+The code is \url{https://github.com/facebookresearch/nevergrad}
+
+A complete list of experimental results is available at \url{https://tinyurl.com/dagstuhloid}
+
+\subsection{What is reproducibility ?}\label{repro}\label{div}
+%      At the Dagstuhl seminar 23251 (June 2023), many principles of benchmarking were discussed. 
+%      Reproducibility is critical, including open sourcing. 
+%      Reproducibility does not necessarily mean exact reproducibility:
+%      \begin{itemize}
+%      \item Maybe results can be impacted by the random seed, but results which can only be obtained with a given seed might
+%      not be very valuable.
+%      \item The version of (e.g. Pypi) packages can have an impact, but here again maybe results which are valid only for a
+%      specific version of some packages might not be that valuable.
+%      \item When a code is on various sites and has thousands of forks, then it is unlikely to disappear from internet and
+%      access can be considered ok.
+%      \end{itemize}
+%      
+%      A critical issue is diversity. We consider diversity as follows:
+%      \begin{itemize}
+%      \item In terms of choosing the benchmarks, it was discussed that cases with budget $>$ 100 times the dimension might be
+%      the exception rather than the rule: e.g. cases with 10 $\times$ budget $<$ dimension exist. We do have many different
+%      scalings of the budget.
+%      \item Real-world benchmarking is critical for validating artificial benchmarks. 
+%      \item We consider the diversity of distribution of optima. For example in artificial continuous domains, MS-BBOB
+%      (multi-scale black-box optimization benchmark) has
+%      different scales for the distribution of optima: note that, even in bounded optimization, deciding that the optimum is
+%      uniformly distributed is a strong choice, and not what we observe in many cases. We also consider P-BBOB
+%      (Parametric-BBOB) which adds an exponent: each coordinate is a standard Gaussian to the power $p$ and for $p\neq 1$ this
+%      implies that the distribution of optima is not invariant.
+%      \item We also consider penalizations for values close to zero, so that starting too close to zero does not bring
+%      information and we really have to take care of the scale. These benchmarks have ZP (zero-penalization) as a prefix in
+%      their name.
+%      \end{itemize}
+
+\subsection{Reproducing results}
+How to reproduce these results:
+\begin{itemize}
+\item Install Nevergrad by “git clone” (see details at the URL above).
+\item  Running:
+\begin{itemize}
+\item Without cluster: "python -m nevergrad.benchmark yabbob \-\-num\_workers=67" if you want to run YABBOB on 67 cores. 
+\item With cluster: Run “sbatch scripts/dagstuhloid.sh” for launching experiments with Slurm. With other cluster management tools, you might have to adapt the script. It is written assuming slurm: it should be feasible to adapt it to other benchmarks. This script is randomized: you might have to run it several times for getting enough results.
+\end{itemize}
+\item For plotting results, run “scripts/dagstuhloid\_plot.sh”. Of course, some data might be missing if not enough runs are complete. Note that in case of latex unavailable or incompatible, all figures are nonetheless available.
+\end{itemize}
+
+\subsection{What if your computational power is not sufficient ?}
+We want everything to be easy to rerun entirely from scratch. This might need a significant computational power.  However, it is possible to run manually and separately some benchmarks: one can easily edit the main script and reduce the number of benchmarks, possibly to a single benchmark at a time, and also we rerun periodically all the benchmarks and accept pull requests so that a limited computational power should not be an obstacle to reproducibility.
+Please note that creating a pull request and pinging us at \url{https://www.facebook.com/groups/nevergradusers/} is a simple solution to get heavy computations done, we are more than happy to run what you need if the computational cost is reasonable. 
+
+\section{Comparison with other benchmarks}
+%      We have more diversity than most existing benchmarking platforms, as detailed in Section \ref{repro}.
+%      As several other platforms, we compare implementations, not abstract algorithms.  A key point is that the implementations are included in the platform and anyone can propose a modification.
+%      A large part of the benchmarks are based on real-world data or reasonably close to this.
+%      Also, bugs in existing implementations have been discussed and avoided.
+%      %We can not guarantee that algorithms are all correctly parametrized: however, everything is free and anyone can implement her own favorite algorithm and/or propose a new tuning. 
+%      %Compared to \cite{lamcts}, our artificial benchmarks are not with optimum in zero (which leads to a strong advantage for algorithms initialized 100 times closer to 0 than others) and for our real-world benchmarks we do not have completely different scalings for different methods unless the scaling of the initialization is on purpose as for some methods scaling the initialization specifically as a function of dimension/budget: of course, such cases deserve specific discussions.
+%      
+For each benchmark, the detailed setup is documented at \url{https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/benchmark/experiments.py}.
+Ctrl-F with the name of the benchmark should provide all details.
+The algorithms are all readable in  \url{https://github.com/facebookresearch/nevergrad/blob/main/nevergrad/optimization/}.
+
+\section{Experimental setup}
+For each benchmark we provide both:
+\begin{itemize}
+\item A heatmap, showing the frequency at which a method (row) outperforms on average another method (col). Methods are ordered by average such frequency, over all other methods.
+The columns show the methods with the number of settings they were able to tackle (for example, some methods have no parallel version and therefore do not fill all settings).
+\item A convergence curve, with the budget on the x-axis and the average (over all budgets) normalized (linearly, to
+0-1) loss. Note that some benchmarks do not have the same functions for the different values of the budget. Therefore we
+might have a rugged curve, not monotonous at all. This is even more the case for wizards such as NGOpt or NGOptRW which
+make decisions based on the budget: they might do a bad choice for some values of the budget, leading to irregular
+curves.
+\end{itemize}
+Note that the ranking of the rows or columns in the heatmap, and the ranking of the curves, do not have to match. As
+detailed above, runs for different budgets are independent, and we take all budget values in the statistics used for the
+heatmaps: therefore the ranking in the heatmap takes into account the low budget as much as the high budgets of the
+experiments. Also, the heatmap is about frequencies of a method outperforming another method: so, the gap does not
+matter. So robustness is taken into account differently: the impact of this difference can be big.
+The heatmap presented here is the so-called ``pure'' one, i.e. only algorithms which tackled all problems are presented.
+%On the other hand, the convergence curves contain all methods TODO: just keep in minds that those not in the heatmap might be averaged on a smaller set of functions, hence the comparison might be unfair.
+
+The appendix contains many competence maps. Competence maps show, for a given pair of variables/values, which algorithms performs best on average. This is quite good for interpretability, but big.
+
+Whereas most platforms do runs for a single budget, and then plot curves up to that budget, we do run the algorithms separately e.g. for budget 100, 200, 400 and 800. This implies that curves are less smooth. The reason for this is that smooth curves obtained by truncation can give a false sense of smoothness and falsify tests if users assume independance between results obtained for different values.
+
+For noisy optimization, we assume unbiased noise in the artificial benchmarks. However, the real world ones are biased in the same sense as tuning in hyperparameter tuning: overfitting and underfitting can happen.
+We differentiate ask, tell and recommend: this is critical. Some platforms do a simple ask and tell only and assume that
+algorithms can, for free, guess which of their visited points is best. This is incorrect and misleading, as pointed out
+in the noisy BBOB benchmark long ago~\cite{bbobissue1,bbobissue2,bbobissue3,bbobissue4}: instead of being based on a recommendation, the reported result is based on the minimum { {\em{expected}} fitness} over all visited points, as if it was possible to know (at cost zero) which of the visited points is the best.
+More formally, noisy optimization algorithms typically have iterations defined by $(x_{n+1},\hat
+x_{n+1})=Algorithm((x_1,\dots,x_n),(y_1,\dots,y_n))$. The $x_n$ are the iterates at which the noisy objective function
+is evaluated, the $y_n$ are the noisy loss values, and the $\hat x_n$ are the recommendations, i.e. approximations of
+the optimum as provided by the algorithm. In ask/tell format, $x_n$ is provided by ``ask'', the algorithm is informed of
+$(x_n,y_n)$ by ``tell'' - and we need a method ``recommend'' for providing the recommendations. Ask and recommend are
+distinct because $x_n$ and $\hat x_n$ are distinct. The regret is evaluated at $\hat x_n$, and it is
+known~\cite{fabian,decocknoise} that, with a significant noise level, fast rates~\cite{fabian,chen1988} for the simple regret can only be obtained using $x_n$ far from the optimum (i.e. $x_n\neq \hat x_n$) for acquiring knowledge. Plotting results using $\E\inf_{i\leq n}(\E f)(x_i)$ (or any other criterion based on the $x_i$ rather than the $\hat x_n$) instead of $\E f(\hat x_n)$ is convenient for reusing noise-free software, but wrong: the best algorithms for such criteria are those which randomly explore around $\hat x_n$ rather than those which do clever explorations further from the optimum. We underline that, in spite of this bug for the noisy case, BBOB has been extremely useful for making benchmarking more rigorous in BBO.
+
+Also in terms of noise, we do not plot the best result so far but the value of the current recommendation. An approach based on best value (with noise) so far implies biased results.
+
+``(RW)'' means that the benchmark is real world. Note that the definition of ``real world'' is not so simple: we are entirely in silico, and in some cases the model has been simplified. This just means that we consider this as sufficiently real-world for being tagged that way.
+
+As pointed out during the seminar, ordered discrete is different from unordered discrete. Some of benchmarks include ordered discrete and some include unordered discrete: Nevergrad can use typed variables (as documented in \url{https://facebookresearch.github.io/nevergrad/optimization.html}) and we use this.
+
+The vast family of benchmarks in Nevergrad is used for tuning an algorithm selector, termed NGOpt. A variant termed NGOptRW is adapted for real-world contexts. However, we do not recommend running it blindly: in spite of the efforts for designing these algorithms, there are many cases in which another algorithm will perform vastly better.
+
+\section{Experimental results}
+
+NSR stands for Normalized Simple Regret: in some sections it denotes the best performing method for this criterion.
+Freq denotes the best method for the average frequency of outperforming other methods over the given benchmark (see
+details above).
+
+\subsection{Multi-scale black-box optimization benchmarks: dealing with the scaling issues}
+
+A key issue, explaining many buggy results, is the tendency of tuning an algorithm and not its baselines, in particular
+in terms of scaling of the solution (Section \ref{scaling}). The most
+important tuning, in particular when the budget is moderate, is the scale: sometimes the optimum is close to the center, sometimes it is far. The principle of the
+multi-scale BBOB benchmark is that it contains four different scales, and the algorithms are not informed of which
+setting corresponds to the next benchmark. We also apply the zero-penalization, as discussed in Section \ref{div}.
+Results show much better results from mathematical programming techniques (which are more robust to unknown scales) and
+of the simple $(1+1)$ evolution strategy. This is an artificial benchmark, but it is inspired with various existing
+benchmarks and by real-world benchmarks \cite{micropredictions1,micropredictions2,bobbo}.
+
+
+\subsubsection{Translation factor 0.01}
+\includegraphics[width=.98\textwidth]{{zp_ms_bbob_plots/fight_translation_factor0.01.png_pure.png}}\\
+\subsubsection{Translation factor 0.1}
+\includegraphics[width=.98\textwidth]{{zp_ms_bbob_plots/fight_translation_factor0.1.png_pure.png}}\\
+\subsubsection{Translation factor 1.0}
+\includegraphics[width=.98\textwidth]{{zp_ms_bbob_plots/fight_translation_factor1.0.png_pure.png}}\\
+\subsubsection{Translation factor 10.0}
+\includegraphics[width=.98\textwidth]{{zp_ms_bbob_plots/fight_translation_factor10.0.png_pure.png}}\\
+\subsubsection{Translation factor 0.01, 0.1, 1.0, 10.0}
+\includegraphics[width=.98\textwidth]{{zp_ms_bbob_plots/fight_all_pure.png}}\\
+\subsubsection{What about the normalized simple regret ?}
+\includegraphics[width=.98\textwidth]{{zp_ms_bbob_plots/xpresults_all.png}}\\
+
+\subsection{Real-world results}
+\input{rwtex.tex}
+

@@ -1,0 +1,21 @@
+Completely sequential hyperparameter optimization of scikit learn models without overfitting (naive). Low budget (nano).
+
+budget160
+budget80
+datasetartificial
+datasetartificialcos
+datasetartificialsquare
+datasetauto-mpg
+datasetboston
+datasetdiabetes
+datasetred-wine
+datasetwhite-wine
+depth
+dimension1
+dimension11
+dimension2
+dimension3
+dimension5
+dimensionnan
+regressormlp
+tree

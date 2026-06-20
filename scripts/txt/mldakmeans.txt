@@ -1,0 +1,20 @@
+Kmeans, part of the MLDA benchmark.
+
+
+budget1000
+budget10000
+clusters10
+clusters100
+clusters5
+clusters50
+dimension10
+dimension100
+dimension30
+dimension300
+nameGerman towns
+nameRuspini
+rescaleFalse
+rescaleTrue
+workers1
+workers10
+workers100

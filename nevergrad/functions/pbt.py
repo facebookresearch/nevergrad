@@ -99,9 +99,9 @@ class PBT(ExperimentFunction):
             distances = self._population_fitness
         else:
             if np.random.uniform() > 0.5:
-                distances = [np.linalg.norm(i - x, 0) for i in self._population_parameters]
+                distances = [np.linalg.norm(i - x, 0) for i in self._population_parameters]  # type: ignore
             else:
-                distances = [np.linalg.norm(i - x, 1) for i in self._population_parameters]
+                distances = [np.linalg.norm(i - x, 1) for i in self._population_parameters]  # type: ignore
         _, source_idx = min((val, idx) for (idx, val) in enumerate(distances))
 
         # Let us copy the checkpoint to a target.

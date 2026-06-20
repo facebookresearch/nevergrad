@@ -3,8 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""This is a very basic example of an instrumented python script
-"""
+"""This is a very basic example of an instrumented python script"""
 value1 = 10
 # @nevergrad@ value1 = NG_ARG{value1|this is a comment}
 value2 = 90

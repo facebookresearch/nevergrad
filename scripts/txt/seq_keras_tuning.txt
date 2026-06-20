@@ -1,0 +1,12 @@
+Not very parallel hyperparameter optimization of the hyperparameters of Keras models.
+
+budget150
+budget500
+datasetauto-mpg
+datasetdiabetes
+datasetkerasBoston
+datasetred-wine
+datasetwhite-wine
+workers1
+workers125
+workers37

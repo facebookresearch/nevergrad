@@ -1,0 +1,21 @@
+Optimization of a strategy in front of Lotka-Volterra equations.
+
+budget100
+budget1600
+budget200
+budget25
+budget400
+budget50
+budget800
+dimension105
+dimension17
+dimension35
+dimension52
+dimension70
+dimension88
+time105
+time17
+time35
+time52
+time70
+time88

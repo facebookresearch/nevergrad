@@ -58,9 +58,7 @@ class HypervolumePareto:
         no_hypervolume: bool = False,
     ) -> None:
         self._auto_bound = 0
-        self._upper_bounds = (
-            np.array([-float("inf")]) if upper_bounds is None else np.array(upper_bounds, copy=False)
-        )
+        self._upper_bounds = np.asarray([-float("inf")]) if upper_bounds is None else np.array(upper_bounds)
         if upper_bounds is None:
             self._auto_bound = auto_bound
         # If we are yet to set the upper bounds, or yet to have an add since doing so, _best_volume is -inf.
@@ -195,18 +193,23 @@ class ParetoFront:
         self._pareto.append(parameter)
         self._pareto_needs_filtering = True
 
-    def _filter_pareto_front(self) -> None:
-        """Filters the Pareto front"""
-        new_pareto: tp.List[p.Parameter] = []
-        for param in self._pareto:  # quadratic :(
-            should_be_added = True
-            for other in self._pareto:
-                if (other.losses <= param.losses).all() and (other.losses < param.losses).any():
-                    should_be_added = False
-                    break
-            if should_be_added:
-                new_pareto.append(param)
-        self._pareto = new_pareto
+    def _filter_pareto_front(self):
+        """Filters the Pareto front by removing dominated points.
+        Implementation from: https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python
+        """
+
+        costs: np.ndarray = np.array([param.losses for param in self._pareto])
+        is_efficient = np.arange(costs.shape[0])
+        if len(costs) < 1:
+            return is_efficient
+        next_point_index = 0  # Next index in the is_efficient array to search for
+        while next_point_index < len(costs):
+            nondominated_point_mask = np.any(costs < costs[next_point_index], axis=1)
+            nondominated_point_mask[next_point_index] = True
+            is_efficient = is_efficient[nondominated_point_mask]  # Remove dominated points
+            costs = costs[nondominated_point_mask]
+            next_point_index = np.sum(nondominated_point_mask[:next_point_index]) + 1
+        self._pareto = [param for i, param in enumerate(self._pareto) if i in is_efficient]
         self._pareto_needs_filtering = False
 
     def get_raw(self) -> tp.List[p.Parameter]:
@@ -256,11 +259,11 @@ class ParetoFront:
                     best_score = float("inf") if subset != "EPS" else 0.0
                     for pa in tentative:
                         if subset == "loss-covering":  # Equivalent to IGD.
-                            best_score = min(best_score, np.linalg.norm(pa.losses - v.losses))
+                            best_score = min(best_score, np.linalg.norm(pa.losses - v.losses))  # type: ignore
                         elif subset == "EPS":  # Cone Epsilon-Dominance.
                             best_score = min(best_score, max(pa.losses - v.losses))
                         elif subset == "domain-covering":
-                            best_score = min(
+                            best_score = min(  # type: ignore
                                 best_score, np.linalg.norm(pa.get_standardized_data(reference=v))
                             )  # TODO verify
                         else:

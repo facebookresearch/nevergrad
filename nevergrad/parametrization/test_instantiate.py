@@ -71,7 +71,9 @@ def test_folder_instantiator(clean_copy: bool) -> None:
         with ifolder.instantiate(value1=12, value2=110.0, string="") as tmp:
             with (tmp / "script.py").open("r") as f:
                 lines = f.readlines()
-    np.testing.assert_equal(lines[10], "value2 = 110.0\n")
+    # for i,l in enumerate(lines):
+    #    print(i, l)
+    np.testing.assert_equal(lines[9], "value2 = 110.0\n")
 
 
 @testing.parametrized(

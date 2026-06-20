@@ -423,6 +423,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             #                rvgom.run()
             #                best_x = gomea_f.best_x
 
+<<<<<<< HEAD
             elif weakself.method == "LSHADE" and weakself.dimension > 1:
                 from .lshade import lshade_optimize
 
@@ -433,6 +434,8 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     return objective_function(data)
 
                 lshade_optimize(lshade_objective_function, weakself.dimension, budget)
+=======
+>>>>>>> upstream/main
             elif weakself.method == "CmaFmin2" and weakself.dimension > 1:
                 import cma  # type: ignore
 

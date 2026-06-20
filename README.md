@@ -5,7 +5,7 @@
 ![Nevergrad](docs/resources/Nevergrad-LogoMark.png)
 
 
-`nevergrad` is a Python 3.6+ library. It can be installed with:
+`nevergrad` is a Python 3.8+ library. It can be installed with:
 
 ```
 pip install nevergrad
@@ -67,8 +67,8 @@ Learn more on parametrization in the [**documentation**](https://facebookresearc
 
 ## Documentation
 
-Check out our [**documentation**](https://facebookresearch.github.io/nevergrad/)! It's still a work in progress, don't hesitate to submit issues and/or PR to update it and make it clearer!
-
+Check out our [**documentation**](https://facebookresearch.github.io/nevergrad/)! It's still a work in progress, so don't hesitate to submit issues and/or pull requests (PRs) to update it and make it clearer!
+The last version of our [**data**](https://drive.google.com/file/d/1p8d1bMCDlvWrDIMXP7fT9pJa1cgjH3NM/view?usp=sharing) and the last version of our [**PDF report**](https://tinyurl.com/dagstuhloid). 
 
 ## Citing
 

@@ -14,7 +14,7 @@ from . import utils
 def bound_to_array(x: tp.BoundValue) -> np.ndarray:
     """Updates type of bounds to use arrays"""
     if isinstance(x, (tuple, list, np.ndarray)):
-        return np.array(x, copy=False)
+        return np.asarray(x)
     else:
         return np.array([x], dtype=float)
 
@@ -118,7 +118,7 @@ def _f(x: BoundType) -> BoundType:
     array with one scalars are converted to floats
     """
     if isinstance(x, (np.ndarray, list, tuple)):
-        x = np.array(x, copy=False)
+        x = np.asarray(x)
         if x.shape == (1,):
             x = float(x[0])
     if isinstance(x, float) and x.is_integer():
@@ -134,7 +134,7 @@ class BoundTransform(Transform):  # pylint: disable=abstract-method
         for name, value in [("a_min", a_min), ("a_max", a_max)]:
             if value is not None:
                 isarray = isinstance(value, (tuple, list, np.ndarray))
-                setattr(self, name, np.array(value, copy=False) if isarray else np.array([value]))
+                setattr(self, name, np.asarray(value) if isarray else np.array([value]))
         if not (self.a_min is None or self.a_max is None):
             if (self.a_min >= self.a_max).any():
                 raise ValueError(f"Lower bounds {a_min} should be strictly smaller than upper bounds {a_max}")

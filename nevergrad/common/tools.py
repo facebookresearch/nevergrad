@@ -16,6 +16,15 @@ import collections
 import typing as tp
 import numpy as np
 
+try:
+    from nevergrad.common import sphere
+except Exception as e:
+    print("Trouble for importing quasi-randomization:", e)
+
+
+def quasi_randomize(x: tp.Iterable[tp.Any], method: str = "none") -> tp.Any:
+    return sphere.quasi_randomize(x, method)
+
 
 def pytorch_import_fix() -> None:
     """Hackfix needed before pytorch import ("dlopen: cannot load any more object with static TLS")
@@ -106,7 +115,7 @@ class Sleeper:
                 return self._min
             value = time.time() - self._start
         else:
-            value = float(np.mean(self._queue))
+            value = float(np.mean(self._queue))  # type: ignore
         return float(np.clip(value / self._num_waits, self._min, self._max))
 
     def sleep(self) -> None:

@@ -1,0 +1,21 @@
+High-dimensional variant of YABBOB, reduced set of problems.
+
+budget10
+budget20
+budget40
+dimension100
+dimension1000
+dimension3000
+dimensions100
+dimensions1000
+dimensions3000
+namedeceptiveillcond
+namediscus
+nameellipsoid
+namegriewank
+namehm
+namelunacek
+namemultipeak
+namestepdoublelinearslope
+rotationFalse
+rotationTrue

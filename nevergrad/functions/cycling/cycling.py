@@ -21,7 +21,6 @@ from .mensteampursuit import mensteampursuit
 
 
 class Cycling(base.ExperimentFunction):
-
     """
     Team Pursuit Track Cycling Simulator.
 

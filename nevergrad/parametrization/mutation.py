@@ -2,8 +2,7 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-"""Experimental mutation patterns for structured data
-"""
+"""Experimental mutation patterns for structured data"""
 
 import typing as tp
 import numpy as np
@@ -316,7 +315,7 @@ def rolling_mean(vector: np.ndarray, window: int) -> np.ndarray:
         return np.sum(vector) * np.ones((len(vector),))  # type: ignore
     if window <= 1:
         return vector
-    cumsum: np.ndarray = np.cumsum(np.concatenate(([0], vector, vector[: window - 1])))
+    cumsum: np.ndarray = np.cumsum(np.concatenate(([0], vector, vector[: window - 1])))  # type: ignore
     return cumsum[window:] - cumsum[:-window]  # type: ignore
 
 

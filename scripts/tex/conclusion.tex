@@ -1,0 +1,123 @@
+
+
+%      The main unexpected result is the excellent performance of quasi-opposite sampling\cite{quasiopposite} (see QODE, QNDE,
+%      QOPSO, SQOPSO in Section \ref{bigstats}). We adapted it
+%      from DE to Particle Swarm Optimization, with SQOPSO using, for each particle $p$ with speed $v$, another particle
+%      $-r\times p$ and speed $-r\times v$. We believe that this is particularly true for benchmarks which do not have a single
+%      scale for optima. If we define optima by e.g. a multivariate normal distribution with mean zero and identity covariance matrix, then
+%      in large dimension the optimum always has a norm close to $\sqrt{dimension}$: this is not what happens in many
+%      real-world benchmarks. Similar phenomenons when all coordinates have the same distribution and are independent imply
+%      that benchmarks sometimes do not evaluate the robustness to scaling. Quasi-opposite sampling might be the tool for
+%      ensuring robustness in continuous optimization, in front of scaling uncertainties.
+%      
+%      As in SAT competitions, we observe excellent results for wizards, such as NGOpt. All methods performing well on a wide
+%      range of benchmarks are wizards. Note that the best results obtained at the BBO Challenge\cite{bbochallenge}, which had
+%      the best performance for a method combining DE, SMAC and others.
+%      
+%      SMAC got better results than other Bayesian Optimization methods. Bayesian Optimization methods are limited to low
+%      budget / dimension contexts, and a strong competitor for continuous optimization with low budget is Cobyla.
+%      
+%      Results are visible in the discrete case (robust good performance for \cite{relengler,lengler}) and in multi-objective
+%      optimization (good performance overall for \cite{pde,mode}), but further work is needed on this part. Noisy optimization
+%      is tricky, and rules for choosing between completely different methods such as sequential quadratic programming or
+%      TBPSA\cite{vasilfoga} and others might be needed.
+%      
+%      
+%      
+%      
+%      %Unless specified otherwise, MetaModel means CMA equipped with a quadratic MetaModel, which is automatically enabled when the learning performs well.
+%      %Neural, RF and SVM as prefixes for MetaModel mean that we use Neural nets, Random Forest or Support Vector Machines as
+%      %surrogate models. The quadratic and random forest meta-models look best overall. DE or OnePlusOne as a suffix mean that
+%      %we use differential evolution or the $(1+1)$ evolution strategy as an underlying optimization model, instead of CMA.
+%      %ChainMetaModelSQP is a memetic algorithm: it combines MetaModel (hence, CMA plus a MetaModel) and a final run using a local method, namely SQP (sequential quadratic programming).
+%      %Usually, a meta-model and a fast local search a the end do improve evolutionary methods in continuous domains. 
+%      %
+%      %On benchmarks close to the good old BBOB, CMA and variants do perform well. The variants equipped with a MetaModel perform better, and
+%      %variants equipped with the the MetaModel and the final local search (namely ChainMetaModelSQP) are even better on YABBOB. It
+%      %remains the best with big budget (YABIGBBOB), In the parallel case, many tools are nearly equivalent, and in the small
+%      %budget case (YASMALLBBOB, YATINYBBOB, YATUNINGBBOB) Cobyla performs well, as frequently in the state of the art.%\cite{TODO}.
+%      %
+%      %On many real-world benchmarks, the budget is lower than in the traditional context of BBOB with budget $=$ dimension $\times$ 1000. There
+%      %are cases with a ratio budget/dimension $<1$, of the order of a few units or a few dozens. DE performs well in many
+%      %cases. This is consistent with many publications considering real-world problems. %TODO
+%      %However for the minimum ratio budget/dimension the simple $(1+1)$ evolution strategy, in continuous domains, is
+%      %excellent.
+%      %We note interesting performances of QODE (quasi-opposite DE) in many cases.
+%      %
+%      %SQP is excellent in noisy optimization, but methods with ad hoc scale can compete: the scale is critical in noisy
+%      %optimization, unless the budget is large. In some cases, TBPSA (combining population-control\cite{mlis} and other tools
+%      %as in \cite{vasilfoga}) also performs well, as well as combinations between bandits and evolutionary algorithms
+%      %(NoisyDiscreteOnePlusOne)..
+%      %Methods designed in the noisy case might diverge.
+%      %
+%      %We include benchmarks with one or several or many constraints (prefix onepen, pen and megapen), tackled with dynamic
+%      %penalization: results were not fundamentally different from the non-penalized case. However, MetaModels are effective in
+%      %a very stable and visible manner: this is consistent with the state of the art.% \cite{TODO}. 
+%      %Cobyla remains very strong in low budget cases. Bayesian Optimization methods are more expensive than other algorithms,
+%      %but rarely perform well, though they are comparable to other methods in low budget cases. The different Bayesian
+%      %Optimization methods perform differently from each other, which is consistent with their highly parametric nature.
+%      %
+%      %%MetaModel perform well on BBOB-style optimization, but were also excellent for several low budget things.
+%      %
+%      %In discrete optimization, INSTRUM\_DISCRETE and SEQUENTIAL\_INSTRUM\_DISCRETE are benchmarks with arity $> 2$ and in
+%      %which the order can not be exploited. Methods which ignore the order do perform better.
+%      %We also consider PBO and BONNANS test functions. Regarding discrete contexts, we note the great performance of the so-called ``DiscreteLenglerOnePlusOne''
+%      %\cite{relengler,lengler}. We tested variants with a different constant (methods with ``Lengler'' and one of ``Fourth, Half, 2, 3''
+%      %in the name) and it turns out that the proved constant, in spite of the simple context in which it was derived, is good.
+%      %Adding ``Tabu'' (SA, as self-avoiding, in the name) can make methods better.
+%      %Still in the discrete case, we note the good performance of methods with ``Recombining'' in the name: while it was less
+%      %investigated theoretically than variants of the discrete $(1+1)$ method, methods with crossover might be quite
+%      %competitive.
+%      %
+%      %Note that Cobyla is frequently at the top, as well as ChainMetaModelSQP, OnePlusOne, DE, RFMetaModel, or DiscreteLenglerOnePlusOne.
+%      %It looks likely that wizards could be improved by using more of these, in particular the random forest metamodel which
+%      %is rarely used.
+%      %Overall, wizards (such as NGOpt or NGOptRW) do perform well, though they are not perfect. Independent tests on other
+%      %benchmarks will be interesting as the wizards tested here have been alive in the platform for quite a long time. They
+%      %are useful, but can guess wrong sometimes, so human expertise is still quite useful.
+%      %
+%      %Regarding the principles of benchmarking, we note that the two different views in Nevergrad (the heatmap and the average
+%      %normalized loss) present different views, with sometimes significant differences. This emphasizes how much how we look at data has a big impact on the interpretation.
+%      %
+%      %%Regarding BBOB variants, TODO
+%      %%
+%      %%Regarding PBBOB, TODO
+%      %%
+%      %%Regarding Holland and Voronoi crossovers, TODO
+%      %%
+%      %%Algorithms taking into account the difference between ordered and unordered discrete variables TODO
+%      %%
+%      %%In the continuous low budget case, Cobyla and BOBYQA are frequently excellent in moderate dimension. The high-dimensional case sees great successes of DE variants.
+%      %
+%      %Consistently with some real world experiments in \cite{micropredictions1,micropredictions2}, we note the the $(1+1)$ evolution strategy with one-fifth rule from \cite{rechenberg73} is still quite good. In artificial benchmarks with a lot of evaluations, high conditionning and rotated contexts, it can become weak: for many realistic contexts, in particular a realistic ratio budget/dimension, it is quite good.
+%      %The simple $(1+1)$ evolution strategy with one-fifth rule, even more when equipped with a meta-model, turned out to be powerful.
+%      %
+%      %In real-world benchmark tunings, results varied vastly from one benchmark to the next.  It looks like we can conclude 
+%      %anything we want by selecting a benchmark or by tuning algorithms for a specific case. Overall, maybe DE variants and
+%      %BOBYQA, HyperOpt, RandomSearch perform well.
+%      %
+%      %The multi-objective setting is quite difficult to analyze. The DE adapted to the multi-objective case available in
+%      %Nevergrad\cite{pde,mode} performs well in classical settings, but high dimensional and many objective cases lead to surprisingly good
+%      %results  by e.g. discrete methods running in the continuous case (which means they are handled that variables with
+%      %infinitely many possibles values). This deserves additional investigation, as using discrete algorithms such as
+%      %DiscreteOnePlusOne in continuous difficult problems is rather new and ignores the topology of each variable as if the
+%      %real numbers were not ordered: this means randomly redrawing some variables.
+%      %
+%      %BFGS can be used in a black-box setting, using finite differences. This is, however, rarely a good option.
+%      %
+%      %Some benchmarks such as photonics or topology optimization have variables organized in arrays of dimension 1 or 2. Not
+%      %all algorithms are able to use this.
+%      %
+%      %GOMEA was recently added, with various linkage options. Results are good e.g. for high-dimensional low-budget problems.
+%      %
+%      %\subsection{Caveats, further work}
+%      %Some benchmarks were implemented but not included in the release due to legal issues in the license. 
+%      %We did not include the important case in which a multi-objective run is performed on surrogate models only: (1) randomly sample, (2) approximate the objective functions by surrogate models, (3) perform a multi-objective optimization on the surrogate only. This is useful for including the user in the loop. This is not tested in the current benchmarks.
+%      %
+%      %Compared to the old Dashboard from 2021, results are somehow similar, with more details. However, we have more real world benchmarks and more discrete experiments. Also,
+%      %some methods have been removed, in particular some slow methods which were rarely performing well compared to present methods.
+%      %
+%      %Key points in benchmarks are frequently how the initialization matches the distribution of the optima, and various
+%      %benchmarks are too close to a single algorithm: this can be the case in the present work as well, in particular for
+%      %wizards. Therefore, independent runs with your preferred modifications of the settings will be fruitful for us: we made our best
+%      %for making this user-friendly.

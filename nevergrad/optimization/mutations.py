@@ -20,7 +20,10 @@ class Mutator:
         """Randomly drawn a normal value, and redraw until it's different after discretization by the quantiles
         1/arity, 2/arity, ..., (arity-1)/arity.
         """
-        w = v
+        if arity > 499:
+            return self.random_state.normal(0.0, 1.0)
+        w = self.random_state.normal(0.0, 1.0)
+        assert arity > 1
         while discretization.threshold_discretization([w], arity) == discretization.threshold_discretization(
             [v], arity
         ):
@@ -91,7 +94,8 @@ class Mutator:
         boolean_vector = np.ones(dimension, dtype=bool)
         while all(boolean_vector) and dimension != 1:
             boolean_vector = self.random_state.rand(dimension) > float(intensity) / dimension
-        return [s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)]
+        result = [s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)]
+        return result
 
     def coordinatewise_mutation(
         self,
@@ -107,7 +111,7 @@ class Mutator:
         while not any(boolean_vector):
             boolean_vector = self.random_state.rand(dimension) < (1.0 / dimension)
         discrete_data = discretization.threshold_discretization(parent, arity=arity)
-        discrete_data = np.where(
+        discrete_data = np.where(  # type: ignore
             boolean_vector,
             discrete_data + self.random_state.choice([-1.0, 1.0], size=dimension) * velocity,
             discrete_data,
@@ -122,13 +126,36 @@ class Mutator:
             boolean_vector = self.random_state.rand(dimension) > (1.0 / dimension)
         return [s if b else self.significantly_mutate(s, arity) for (b, s) in zip(boolean_vector, parent)]
 
-    def crossover(self, parent: tp.ArrayLike, donor: tp.ArrayLike, rotation: bool = False) -> tp.ArrayLike:
+    def crossover(
+        self, parent: tp.ArrayLike, donor: tp.ArrayLike, rotation: bool = False, crossover_type: str = "none"
+    ) -> tp.ArrayLike:
         if rotation:
             dim = len(parent)
             k = self.random_state.randint(1, dim)
             mix = [self.random_state.choice([donor[(i + k) % dim], parent[i]]) for i in range(len(parent))]
         else:
-            mix = [self.random_state.choice([d, p]) for (p, d) in zip(parent, donor)]
+            if crossover_type == "rand":
+                crossover_type = str(self.random_state.choice(["max", "min", "onepoint", "twopoint"]))
+            if crossover_type == "max":
+                mix = [min([d, p]) for (p, d) in zip(parent, donor)]
+            elif crossover_type == "min":
+                mix = [max([d, p]) for (p, d) in zip(parent, donor)]
+            elif crossover_type == "onepoint" and len(parent) > 4:
+                sig = self.random_state.choice([-1.0, 1.0])
+                idx = self.random_state.randint(len(parent) - 1) + 0.5
+                mix = [(d if (i - idx) * sig < 0 else p) for i, (p, d) in enumerate(zip(parent, donor))]
+            elif crossover_type == "twopoint" and len(parent) > 6:
+                sig = self.random_state.choice([-1.0, 1.0])
+                idx = self.random_state.randint(len(parent) - 1) + 0.5
+                idx2 = self.random_state.randint(len(parent) - 1) + 0.5
+                while idx == idx2:
+                    idx2 = self.random_state.randint(len(parent) - 1) + 0.5
+                mix = [
+                    (d if (i - idx) * (i - idx2) * sig < 0 else p)
+                    for i, (p, d) in enumerate(zip(parent, donor))
+                ]
+            else:
+                mix = [self.random_state.choice([d, p]) for (p, d) in zip(parent, donor)]
         return self.discrete_mutation(mix)
 
     def get_roulette(self, archive: utils.Archive[utils.MultiValue], num: tp.Optional[int] = None) -> tp.Any:

@@ -202,7 +202,7 @@ class TransitionChoice(BaseChoice):
             choices=choices,
             repetitions=repetitions,
             indices=indices,
-            transitions=transitions if isinstance(transitions, Array) else np.array(transitions, copy=False),
+            transitions=transitions if isinstance(transitions, Array) else np.asarray(transitions),
         )
         assert self.transitions.value.ndim == 1
         self._ref: tp.Optional["TransitionChoice"] = None

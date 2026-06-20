@@ -1,0 +1,9 @@
+Completely sequential hyperparameter optimization of Keras model without overfitting.
+
+budget150
+budget500
+datasetauto-mpg
+datasetdiabetes
+datasetkerasBoston
+datasetred-wine
+datasetwhite-wine

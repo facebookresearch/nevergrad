@@ -1,0 +1,19 @@
+ranknoisy
+block dimension200
+block dimension2000
+block dimension20000
+budget100000
+budget25000
+budget50000
+dimension200
+dimension2000
+dimension20000
+namealtcigar
+namealtellipsoid
+namecigar
+nameellipsoid
+noise dissymmetryFalse
+noise dissymmetryTrue
+useful dimensions200
+useful dimensions2000
+useful dimensions20000

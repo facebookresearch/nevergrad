@@ -1,0 +1,34 @@
+Function proposed by Frederic Bonnans.
+Discrete optimization. New in the field of black-box optimization.
+
+
+budget100
+budget20
+budget30
+budget40
+budget50
+budget60
+budget70
+budget80
+budget90
+index0
+index1
+index10
+index11
+index12
+index13
+index14
+index15
+index16
+index17
+index18
+index19
+index2
+index20
+index3
+index4
+index5
+index6
+index7
+index8
+index9

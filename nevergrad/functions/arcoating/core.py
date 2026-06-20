@@ -73,7 +73,7 @@ class ARCoating(base.ExperimentFunction):
         super().__init__(self._get_minimum_average_reflexion, array)
 
     def _get_minimum_average_reflexion(self, x: np.ndarray) -> float:
-        x = np.array(x, copy=False).ravel()
+        x = np.asarray(x).ravel()
         assert len(x) == self.dimension, f"Expected dimension {self.dimension}, got {len(x)}"
         if np.min(x) < self.epmin or np.max(x) > self.epf:  # acceptability
             return float("inf")

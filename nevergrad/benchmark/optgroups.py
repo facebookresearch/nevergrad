@@ -2,8 +2,7 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-"""Groups of optimizers for use in benchmarks
-"""
+"""Groups of optimizers for use in benchmarks"""
 import typing as tp
 import numpy as np
 import nevergrad as ng
@@ -45,9 +44,6 @@ def get_optimizers(*names: str, seed: tp.Optional[int] = None) -> tp.List[Optim]
 @registry.register
 def large() -> tp.Sequence[Optim]:
     return [
-        "NGO",
-        "Shiwa",
-        "DiagonalCMA",
         "CMA",
         "PSO",
         "DE",
@@ -91,6 +87,15 @@ def emna_variants() -> tp.Sequence[Optim]:
         "NaiveAnisoEMNATBPSA",
         "AnisoEMNATBPSA",
     ]
+
+
+@registry.register
+def split() -> tp.Sequence[Optim]:
+    # optims: tp.List[Optim] = []
+    optims = [o for o in optimizerlib_registry.keys() if "Split" in o[:7] and "BO" not in o] + [
+        o[5:] for o in optimizerlib_registry.keys() if "Split" in o[:7] and "BO" not in o
+    ]
+    return optims
 
 
 @registry.register

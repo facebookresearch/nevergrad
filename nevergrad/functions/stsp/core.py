@@ -43,5 +43,5 @@ class STSP(ExperimentFunction):
         order = self.order
         x = self.x
         y = self.y
-        ax.plot((x[o] for o in order), (y[o] for o in order))
+        ax.plot((x[o] for o in order), (y[o] for o in order))  # type: ignore
         plt.savefig(filename)

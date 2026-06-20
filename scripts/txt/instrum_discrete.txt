@@ -1,0 +1,15 @@
+instrum discrete
+arity2
+arity3
+arity30
+arity7
+budget50
+budget500
+budget5000
+num workers1
+num workers10
+nv10
+nv1000
+nv200
+nv50
+nv5000
