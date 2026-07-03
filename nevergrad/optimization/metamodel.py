@@ -155,7 +155,10 @@ def learn_on_k_best(
         # Fit a linear model.
         model = LinearRegression()
 
-    model.fit(X2, y)
+    try:
+        model.fit(X2, y)
+    except Exception as e:
+        raise MetaModelFailure("Fit error: unlearnable objective function:" + str(e))
     # Check model quality.
     model_outputs = model.predict(X2)
     # if algorithm == "image":
