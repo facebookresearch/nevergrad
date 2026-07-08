@@ -60,6 +60,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                 "pysot",
                 "negpysot",
                 "Powell",
+                "LSHADE",
             ]
             or "NLOPT" in method
             or "DS" in method
@@ -422,6 +423,16 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
             #                rvgom.run()
             #                best_x = gomea_f.best_x
 
+            elif weakself.method == "LSHADE" and weakself.dimension > 1:
+                from .lshade import lshade_optimize
+
+                def lshade_objective_function(data):
+                    # Hopefully the line below does nothing if unbounded and rescales from [0, 1] if bounded.
+                    if weakself._normalizer is not None and weakself._normalizer.fully_bounded:
+                        data = weakself._normalizer.backward(np.asarray(data, dtype=np.float32))
+                    return objective_function(data)
+
+                lshade_optimize(lshade_objective_function, weakself.dimension, budget)
             elif weakself.method == "CmaFmin2" and weakself.dimension > 1:
                 import cma  # type: ignore
 
@@ -527,6 +538,7 @@ class NonObjectOptimizer(base.ConfiguredOptimizer):
         super().__init__(_NonObjectMinimizeBase, locals())
 
 
+LSHADE = NonObjectOptimizer(method="LSHADE").set_name("LSHADE", register=True)
 AX = NonObjectOptimizer(method="AX").set_name("AX", register=True)
 BOBYQA = NonObjectOptimizer(method="BOBYQA").set_name("BOBYQA", register=True)
 NelderMead = NonObjectOptimizer(method="Nelder-Mead").set_name("NelderMead", register=True)
