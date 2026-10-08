@@ -325,7 +325,7 @@ class _SamplingSearch(OneShotOptimizer):
         sample = self.sampler()
         if self._rescaler is not None:
             sample = self._rescaler.apply(sample)
-        if self.autorescale is True or self.autorescale == "auto":
+        if (self.autorescale is True or self.autorescale == "auto") and self.dimension > 1:
             assert self.budget is not None
             self.scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
         if self.autorescale == "autotune":
