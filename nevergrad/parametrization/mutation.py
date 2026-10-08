@@ -12,7 +12,6 @@ from .data import Data, Scalar
 from .choice import Choice
 from . import _layering
 
-
 D = tp.TypeVar("D", bound=Data)
 P = tp.TypeVar("P", bound=core.Parameter)
 

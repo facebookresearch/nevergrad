@@ -13,7 +13,6 @@ import pytest
 import numpy as np
 from . import testing
 
-
 # decorators for tests which do not need to be run on Windows
 skip_win = pytest.mark.skipif(sys.platform == "win32", reason="Internals")
 

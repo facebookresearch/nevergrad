@@ -25,7 +25,6 @@ from . import experiments, optgroups
 from .utils import Selector
 from .xpbase import Experiment
 
-
 CI = bool(os.environ.get("CIRCLECI", False)) or bool(os.environ.get("CI", False))
 
 

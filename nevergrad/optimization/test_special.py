@@ -10,7 +10,6 @@ from . import test_optimizerlib
 from . import optimizerlib as optlib
 import nevergrad as ng
 
-
 KEY = "NEVERGRAD_SPECIAL_TESTS"
 if not os.environ.get(KEY, ""):
     pytest.skip(f"These tests only run if {KEY} is set in the environment", allow_module_level=True)

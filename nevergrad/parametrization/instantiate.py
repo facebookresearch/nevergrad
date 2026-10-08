@@ -14,7 +14,6 @@ import nevergrad.common.typing as tp
 from nevergrad.common import testing
 from . import utils
 
-
 LINETOKEN = "@nevergrad" + "@"  # Do not trigger an error when parsing this file...
 COMMENT_CHARS = {".c": "//", ".h": "//", ".cpp": "//", ".hpp": "//", ".py": "#", ".m": "%"}
 

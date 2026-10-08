@@ -8,7 +8,6 @@ import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 from .hypervolume import HypervolumeIndicator
 
-
 AUTO_BOUND = 15
 
 
@@ -172,7 +171,7 @@ class HypervolumePareto:
         """
         return self._pf.get_front(size, subset, subset_tentatives)
 
-    def get_min_losses(self) -> tp.List[float]:
+    def get_min_losses(self) -> np.ndarray:
         return np.min([p.losses for p in self._pf.get_raw()], axis=0)
 
 

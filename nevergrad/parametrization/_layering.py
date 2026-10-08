@@ -11,7 +11,6 @@ import numpy as np
 from nevergrad.common import errors
 import nevergrad.common.typing as tp
 
-
 L = tp.TypeVar("L", bound="Layered")
 F = tp.TypeVar("F", bound="Filterable")
 In = tp.TypeVar("In")

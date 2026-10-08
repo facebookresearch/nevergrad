@@ -1600,7 +1600,7 @@ class SPSA(base.Optimizer):
                 self.t -= (self._ak(k) * (self.yp - self.ym) / 2 / self._ck(k)) * self.delta
                 self.avg += (self.t - self.avg) / (k // 2 + 1)
             self.delta = 2 * self._rng.randint(2, size=self.dimension) - 1
-            return self.t - self._ck(k) * self.delta  # type:ignore
+            return self.t - self._ck(k) * self.delta  # type: ignore
         return self.t + self._ck(k) * self.delta  # type: ignore
 
     def _internal_tell(self, x: tp.ArrayLike, loss: tp.FloatLoss) -> None:

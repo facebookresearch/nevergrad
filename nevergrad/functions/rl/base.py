@@ -7,7 +7,6 @@ import typing as tp
 from collections import defaultdict
 import gym
 
-
 StepReturn = tp.Tuple[
     tp.Dict[str, tp.Any], tp.Dict[str, int], tp.Dict[str, bool], tp.Dict[str, tp.Any]
 ]  # ray-like multi-agent return type

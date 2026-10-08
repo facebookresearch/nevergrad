@@ -13,7 +13,6 @@ from ._layering import ValueProperty as ValueProperty
 from ._layering import Layered as Layered
 from ._layering import Level as Level
 
-
 # pylint: disable=no-value-for-parameter,pointless-statement,import-outside-toplevel
 
 

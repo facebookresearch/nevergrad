@@ -10,7 +10,6 @@ import numpy as np
 import pytest
 from . import multigym
 
-
 GYM_ENV_NAMES = multigym.GymMulti.get_env_names()
 
 

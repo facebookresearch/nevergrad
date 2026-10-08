@@ -6,7 +6,6 @@
 import typing as tp
 import functools
 
-
 X = tp.TypeVar("X")
 
 

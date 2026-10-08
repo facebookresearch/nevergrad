@@ -8,7 +8,6 @@ from pathlib import Path
 import nevergrad as ng
 from nevergrad.parametrization import FolderFunction
 
-
 if __name__ == "__main__":
     folder = Path(__file__).parents[1] / "parametrization" / "examples"
     func = FolderFunction(folder, [sys.executable, "examples/script.py"], clean_copy=True)

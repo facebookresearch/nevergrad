@@ -8,7 +8,6 @@ import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.common.decorators import Registry
 
-
 registry: Registry[tp.Callable[[np.ndarray], float]] = Registry()
 
 

@@ -16,7 +16,6 @@ from nevergrad.functions.test_base import ExampleFunction
 from nevergrad.functions.test_functionlib import DESCRIPTION_KEYS as ARTIFICIAL_KEYS
 from . import xpbase
 
-
 DESCRIPTION_KEYS = {
     "seed",
     "elapsed_time",
