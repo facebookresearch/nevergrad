@@ -315,7 +315,7 @@ class MLTuning(ExperimentFunction):
         assert data_dimension is not None, f"Pb with {dataset} in dimension {data_dimension}"
 
         # Training set.
-        X = np.arange(0.0, 1.0, 1.0 / (self.num_data * data_dimension))
+        X: np.ndarray = np.arange(0.0, 1.0, 1.0 / (self.num_data * data_dimension))
         X = X.reshape(-1, data_dimension)
         rng.shuffle(X)
 
@@ -345,7 +345,7 @@ class MLTuning(ExperimentFunction):
             self.y_valid_cv += [y_valid_cv]
 
         # We also generate the test set.
-        X_test = np.arange(0.0, 1.0, 1.0 / 60000)
+        X_test: np.ndarray = np.arange(0.0, 1.0, 1.0 / 60000)
         rng.shuffle(X_test)
         X_test = X_test.reshape(-1, data_dimension)
         y_test = np.sum(target_function(X_test), axis=1).ravel()

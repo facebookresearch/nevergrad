@@ -23,7 +23,6 @@ import torch.nn.functional as F  # noqa
 from torch import nn  # noqa
 from torch.utils.data import WeightedRandomSampler  # noqa
 
-
 AnyEnv = tp.Union[gym.Env, base.MultiAgentEnv]
 
 

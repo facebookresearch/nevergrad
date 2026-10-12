@@ -8,7 +8,6 @@ import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -52,6 +51,7 @@ class CrowdingDistance:
             front = sorted(front, key=lambda x: x.loss)  # type: ignore
             objective_minn = front[0].loss
             objective_maxn = front[-1].loss
+            assert objective_minn is not None and objective_maxn is not None
             assert objective_minn <= objective_maxn
 
             # Set the crowding distance
@@ -62,11 +62,12 @@ class CrowdingDistance:
             # to the absolute normalized difference in the function values of two
             # adjacent solutions.
             for j in range(1, len(front) - 1):
-                if front[j + 1].loss is None or front[j - 1].loss is None:
+                loss_next = front[j + 1].loss
+                loss_prev = front[j - 1].loss
+                if loss_next is None or loss_prev is None:
                     distance = 0
                 else:
-                    distance = front[j + 1].loss if front[j + 1].loss is not None else 0
-                    distance -= front[j - 1].loss if front[j - 1].loss is not None else 0
+                    distance = loss_next - loss_prev
 
                 # Check if minimum and maximum are the same (in which case do nothing)
                 if objective_maxn - objective_minn == 0:

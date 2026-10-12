@@ -9,7 +9,6 @@ import nevergrad.common.typing as tp
 from . import utils
 from . import core
 
-
 D = tp.TypeVar("D", bound="Container")
 
 

@@ -9,7 +9,6 @@ Based on
 https://raw.githubusercontent.com/purdue-orbital/rocket-simulation/master/Simulation2.py
 """
 
-
 import math
 import pyproj
 import numpy as np

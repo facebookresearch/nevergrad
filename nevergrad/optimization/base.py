@@ -18,7 +18,6 @@ from nevergrad.common.decorators import Registry
 from . import utils
 from . import multiobjective as mobj
 
-
 OptCls = tp.Union["ConfiguredOptimizer", tp.Type["Optimizer"]]
 registry: Registry[OptCls] = Registry()
 _OptimCallBack = tp.Union[

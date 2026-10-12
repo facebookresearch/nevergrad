@@ -10,7 +10,6 @@ from nevergrad.common import testing
 from nevergrad.parametrization import parameter as p
 from . import functionlib
 
-
 DESCRIPTION_KEYS = {
     "split",
     "function_class",

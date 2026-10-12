@@ -28,7 +28,7 @@ from .exporttable import export_table
 
 _DPI = 250
 no_limit = False
-pure_algorithms = []
+pure_algorithms: tp.List[str] = []
 
 # %% Basic tools
 
@@ -386,7 +386,8 @@ def create_plots(
                         best_algo[i] += ["none"]
 
         # Let us loop over all combinations of variables.
-        for case in df.unique(fixed) if fixed else [()]:
+        cases: tp.Iterable[tp.Tuple[tp.Any, ...]] = df.unique(fixed) if fixed else [()]
+        for case in cases:
             print("\n# new case #", fixed, case)
             casedf = df.select(**dict(zip(fixed, case)))
             data_df = FightPlotter.winrates_from_selection(

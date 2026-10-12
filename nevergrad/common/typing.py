@@ -6,6 +6,7 @@
 """Definitions of some convenient types.
 If you know better practices, feel free to submit it ;)
 """
+
 # pylint: disable=unused-import
 # structures
 from typing import Any as Any
@@ -47,7 +48,6 @@ except:
 
 #
 import numpy as _np
-
 
 ArgsKwargs = Tuple[Tuple[Any, ...], Dict[str, Any]]
 ArrayLike = Union[Tuple[float, ...], List[float], _np.ndarray]  # most common

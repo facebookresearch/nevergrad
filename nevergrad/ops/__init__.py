@@ -7,5 +7,4 @@ from ..parametrization import mutation as mutations
 from ..parametrization._datalayers import Int as Int
 from . import constraints as constraints
 
-
 __all__ = ["mutations", "constraints", "Int"]

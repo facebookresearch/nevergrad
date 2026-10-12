@@ -79,7 +79,7 @@ class ARCoating(base.ExperimentFunction):
             return float("inf")
         value = 0.0
         for lam in self.lambdas:
-            RE = impedance_pix(x, self.dpix, lam, self.ep0, self.epf)  # only normal incidence
+            RE = impedance_pix(x, self.dpix, float(lam), self.ep0, self.epf)  # only normal incidence
             value = value + RE / len(self.lambdas)
         return value
 
