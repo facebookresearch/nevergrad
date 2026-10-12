@@ -73,7 +73,7 @@ def test_folder_instantiator(clean_copy: bool) -> None:
                 lines = f.readlines()
     # for i,l in enumerate(lines):
     #    print(i, l)
-    np.testing.assert_equal(lines[9], "value2 = 110.0\n")
+    np.testing.assert_equal(lines[10], "value2 = 110.0\n")
 
 
 @testing.parametrized(

@@ -46,6 +46,7 @@ Keras-Preprocessing
 silence_tensorflow  # for olymp
 tensorflow_probability  # for olymp
 bayes-optim   #==0.3.0
+pyDOE<=1.0.0  # bayes-optim imports "pyDOE", which pyDOE>=1.0.1 renamed to "pydoe"
 nlopt
 pybullet>=3.2.2
 #box2d-py>=2.3.5
