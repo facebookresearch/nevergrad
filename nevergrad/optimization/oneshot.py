@@ -164,7 +164,8 @@ class _RandomSearch(OneShotOptimizer):
         if isinstance(scale, str) and scale == "auto":
             # Some variants use a rescaling depending on the budget and the dimension (1st version).
             assert self.budget is not None
-            scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension))
+            # log(dimension) vanishes in dimension 1, so keep the default scale there
+            scale = (1 + np.log(self.budget)) / (4 * np.log(self.dimension)) if self.dimension > 1 else 1.0
         if isinstance(scale, str) and scale == "autotune":
             assert self.budget is not None
             scale = np.sqrt(np.log(self.budget) / self.dimension)
