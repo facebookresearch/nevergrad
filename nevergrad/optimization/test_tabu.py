@@ -10,7 +10,6 @@ from scipy import stats
 import nevergrad as ng
 import nevergrad.common.typing as tp
 
-
 # decorators to be used when testing on Windows is unecessary
 # or cumbersome
 skip_win_perf = pytest.mark.skipif(

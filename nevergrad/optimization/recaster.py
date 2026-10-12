@@ -14,7 +14,6 @@ For instructions for doing this for another library, see
 SequentialRecastOptimizer.
 """
 
-
 import warnings
 import threading
 import queue

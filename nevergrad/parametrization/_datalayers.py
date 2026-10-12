@@ -17,7 +17,6 @@ from . import discretization
 from . import transforms as trans
 from . import utils
 
-
 D = tp.TypeVar("D", bound=Data)
 Op = tp.TypeVar("Op", bound="Operation")
 BL = tp.TypeVar("BL", bound="BoundLayer")

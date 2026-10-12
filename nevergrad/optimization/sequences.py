@@ -10,7 +10,6 @@ from numpy.random import RandomState
 import nevergrad.common.typing as tp
 from nevergrad.common.decorators import Registry
 
-
 samplers: Registry[tp.Type["Sampler"]] = Registry()
 
 

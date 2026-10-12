@@ -13,7 +13,6 @@ import cv2
 from nevergrad.functions.base import UnsupportedExperiment as UnsupportedExperiment
 from nevergrad.common.decorators import Registry
 
-
 registry: Registry[tp.Any] = Registry()
 MODELS: tp.Dict[str, tp.Any] = {}
 

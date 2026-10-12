@@ -13,7 +13,6 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 
-
 _NAMED_URLS = {
     "German towns": "http://people.sc.fsu.edu/~jburkardt/datasets/spaeth2/spaeth2_07.txt",
     "Ruspini": "https://rls.sites.oasis.unc.edu/s754/data/ruspini.txt",

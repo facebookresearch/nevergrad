@@ -217,11 +217,14 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
 
                 dim = weakself.dimension
                 opt_prob = LocalOptimizationProblem()
+                # pySOT's OptimizationProblem expects these attributes set after construction
+                # pylint: disable=attribute-defined-outside-init
                 opt_prob.dim = dim
                 opt_prob.lb = np.array([0.0] * dim)
                 opt_prob.ub = np.array([1.0] * dim)
                 opt_prob.int_var = []
                 opt_prob.cont_var = np.array(range(dim))
+                # pylint: enable=attribute-defined-outside-init
 
                 rbf = RBFInterpolant(
                     dim=opt_prob.dim,
@@ -320,6 +323,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
 
                 smac = HyperparameterOptimizationFacade(scenario, smac2_obj)
                 res = smac.optimize()
+                assert not isinstance(res, list), "Expected a single Configuration from SMAC"
                 best_x = np.array([res[f"x{tag}{k}"] for k in range(len(res.keys()))])
                 best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=float))
                 # print(f"end SMAC optimization {best_x}")

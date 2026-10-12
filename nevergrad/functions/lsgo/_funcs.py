@@ -18,7 +18,6 @@ from nevergrad.functions import ExperimentFunction
 import nevergrad as ng
 from . import _core
 
-
 registry = Registry[Type["LsgoFunction"]]()
 
 
