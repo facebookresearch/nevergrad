@@ -1164,7 +1164,7 @@ class AXP(base.Optimizer):
         except Exception as e:
             print(f"Pb for creating AX solver")
             raise e
-        self.ax_parametrization = [
+        self.ax_parametrization: tp.List[tp.Dict[str, tp.Any]] = [
             {"name": "x" + str(i), "type": "range", "bounds": [0.0, 1.0]} for i in range(self.dimension)
         ]
         self.ax_client = AxClient()
