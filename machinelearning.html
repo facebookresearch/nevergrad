@@ -136,7 +136,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Optimization of continuous hyperparameters =========&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Optimization of continuous hyperparameters ========="</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">train_and_return_test_error</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
@@ -146,7 +146,7 @@
 
 <span class="n">budget</span> <span class="o">=</span> <span class="mi">1200</span>  <span class="c1"># How many trainings we will do before concluding.</span>
 
-<span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;RandomSearch&quot;</span><span class="p">,</span> <span class="s2">&quot;TwoPointsDE&quot;</span><span class="p">,</span> <span class="s2">&quot;CMA&quot;</span><span class="p">,</span> <span class="s2">&quot;PSO&quot;</span><span class="p">,</span> <span class="s2">&quot;ScrHammersleySearch&quot;</span><span class="p">]</span>
+<span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"RandomSearch"</span><span class="p">,</span> <span class="s2">"TwoPointsDE"</span><span class="p">,</span> <span class="s2">"CMA"</span><span class="p">,</span> <span class="s2">"PSO"</span><span class="p">,</span> <span class="s2">"ScrHammersleySearch"</span><span class="p">]</span>
 </pre></div>
 </div>
 <p>We will compare several algorithms (defined in <code class="code docutils literal notranslate"><span class="pre">names</span></code>).
@@ -162,7 +162,7 @@ A complete list is available in <code class="code docutils literal notranslate">
     <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">budget</span> <span class="o">//</span> <span class="mi">3</span><span class="p">):</span>
         <span class="n">x1</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">ask</span><span class="p">()</span>
         <span class="c1"># Ask and tell can be asynchronous.</span>
-        <span class="c1"># Just be careful that you &quot;tell&quot; something that was asked.</span>
+        <span class="c1"># Just be careful that you "tell" something that was asked.</span>
         <span class="c1"># Here we ask 3 times and tell 3 times in order to fake asynchronicity</span>
         <span class="n">x2</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">ask</span><span class="p">()</span>
         <span class="n">x3</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">ask</span><span class="p">()</span>
@@ -176,7 +176,7 @@ A complete list is available in <code class="code docutils literal notranslate">
         <span class="n">optim</span><span class="o">.</span><span class="n">tell</span><span class="p">(</span><span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">)</span>
         <span class="n">optim</span><span class="o">.</span><span class="n">tell</span><span class="p">(</span><span class="n">x3</span><span class="p">,</span> <span class="n">y3</span><span class="p">)</span>
     <span class="n">recommendation</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">recommend</span><span class="p">()</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;* &quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot; provides a vector of parameters with test error &quot;</span><span class="p">,</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"* "</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">" provides a vector of parameters with test error "</span><span class="p">,</span>
           <span class="n">train_and_return_test_error</span><span class="p">(</span><span class="o">*</span><span class="n">recommendation</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">recommendation</span><span class="o">.</span><span class="n">kwargs</span><span class="p">))</span>
 </pre></div>
 </div>
@@ -190,7 +190,7 @@ A complete list is available in <code class="code docutils literal notranslate">
 
     <span class="k">with</span> <span class="n">futures</span><span class="o">.</span><span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">optim</span><span class="o">.</span><span class="n">num_workers</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>  <span class="c1"># the executor will evaluate the function in multiple threads</span>
         <span class="n">recommendation</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">train_and_return_test_error</span><span class="p">,</span> <span class="n">executor</span><span class="o">=</span><span class="n">executor</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;* &quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot; provides a vector of parameters with test error &quot;</span><span class="p">,</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"* "</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">" provides a vector of parameters with test error "</span><span class="p">,</span>
           <span class="n">train_and_return_test_error</span><span class="p">(</span><span class="o">*</span><span class="n">recommendation</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">recommendation</span><span class="o">.</span><span class="n">kwargs</span><span class="p">))</span>
 </pre></div>
 </div>
@@ -203,21 +203,21 @@ A complete list is available in <code class="code docutils literal notranslate">
 
 <span class="c1"># Let us define a function.</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">myfunction</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">,</span> <span class="n">arg3</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">arg1</span> <span class="o">!=</span> <span class="s2">&quot;a&quot;</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">arg2</span> <span class="o">!=</span> <span class="s2">&quot;e&quot;</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">arg1</span> <span class="o">!=</span> <span class="s2">"a"</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">arg2</span> <span class="o">!=</span> <span class="s2">"e"</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>This function must then be instrumented in order to let the optimizer now what are the arguments:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
 <span class="c1"># argument transformation</span>
 <span class="c1"># Optimization of mixed (continuous and discrete) hyperparameters.</span>
-<span class="n">arg1</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">TransitionChoice</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">])</span>  <span class="c1"># 1st arg. = positional discrete argument</span>
+<span class="n">arg1</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">TransitionChoice</span><span class="p">([</span><span class="s2">"a"</span><span class="p">,</span> <span class="s2">"b"</span><span class="p">])</span>  <span class="c1"># 1st arg. = positional discrete argument</span>
 <span class="c1"># We apply a softmax for converting real numbers to discrete values.</span>
-<span class="n">arg2</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Choice</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;e&quot;</span><span class="p">])</span>  <span class="c1"># 2nd arg. = positional discrete argument</span>
+<span class="n">arg2</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Choice</span><span class="p">([</span><span class="s2">"a"</span><span class="p">,</span> <span class="s2">"c"</span><span class="p">,</span> <span class="s2">"e"</span><span class="p">])</span>  <span class="c1"># 2nd arg. = positional discrete argument</span>
 <span class="n">value</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Scalar</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span><span class="o">.</span><span class="n">set_mutation</span><span class="p">(</span><span class="n">sigma</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># the 4th arg. is a keyword argument with Gaussian prior</span>
 
 <span class="c1"># create the parametrization</span>
-<span class="c1"># the 3rd arg. is a positional arg. which will be kept constant to &quot;blublu&quot;</span>
-<span class="n">instru</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Instrumentation</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">,</span> <span class="s2">&quot;blublu&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+<span class="c1"># the 3rd arg. is a positional arg. which will be kept constant to "blublu"</span>
+<span class="n">instru</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">Instrumentation</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">,</span> <span class="s2">"blublu"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="n">instru</span><span class="o">.</span><span class="n">dimension</span><span class="p">)</span>  <span class="c1"># 5 dimensional space</span>
 </pre></div>
@@ -231,7 +231,7 @@ A complete list is available in <code class="code docutils literal notranslate">
 </ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">instru</span><span class="o">.</span><span class="n">set_standardized_data</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">80</span><span class="p">,</span> <span class="o">-</span><span class="mi">80</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">instru</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">instru</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="p">((</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="s1">&#39;e&#39;</span><span class="p">,</span> <span class="s1">&#39;blublu&#39;</span><span class="p">),</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mf">7.0</span><span class="p">})</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="p">((</span><span class="s1">'b'</span><span class="p">,</span> <span class="s1">'e'</span><span class="p">,</span> <span class="s1">'blublu'</span><span class="p">),</span> <span class="p">{</span><span class="s1">'value'</span><span class="p">:</span> <span class="mf">7.0</span><span class="p">})</span>
 <span class="n">myfunction</span><span class="p">(</span><span class="o">*</span><span class="n">instru</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">instru</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="mf">8.0</span>
 </pre></div>
@@ -246,12 +246,12 @@ The function therefore returns 7 + 1 = 8.</p>
 <cite>TwoPointsDE</cite> is often excellent in the large scale case (budget in the hundreds).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">nevergrad</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ng</span>
 <span class="n">budget</span> <span class="o">=</span> <span class="mi">1200</span>  <span class="c1"># How many episode we will do before concluding.</span>
-<span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;RandomSearch&quot;</span><span class="p">,</span> <span class="s2">&quot;ScrHammersleySearch&quot;</span><span class="p">,</span> <span class="s2">&quot;TwoPointsDE&quot;</span><span class="p">,</span> <span class="s2">&quot;PortfolioDiscreteOnePlusOne&quot;</span><span class="p">,</span> <span class="s2">&quot;CMA&quot;</span><span class="p">,</span> <span class="s2">&quot;PSO&quot;</span><span class="p">]:</span>
+<span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"RandomSearch"</span><span class="p">,</span> <span class="s2">"ScrHammersleySearch"</span><span class="p">,</span> <span class="s2">"TwoPointsDE"</span><span class="p">,</span> <span class="s2">"PortfolioDiscreteOnePlusOne"</span><span class="p">,</span> <span class="s2">"CMA"</span><span class="p">,</span> <span class="s2">"PSO"</span><span class="p">]:</span>
     <span class="n">optim</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">registry</span><span class="p">[</span><span class="n">name</span><span class="p">](</span><span class="n">parametrization</span><span class="o">=</span><span class="n">instru</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="n">budget</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">budget</span> <span class="o">//</span> <span class="mi">3</span><span class="p">):</span>
         <span class="n">x1</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">ask</span><span class="p">()</span>
         <span class="c1"># Ask and tell can be asynchronous.</span>
-        <span class="c1"># Just be careful that you &quot;tell&quot; something that was asked.</span>
+        <span class="c1"># Just be careful that you "tell" something that was asked.</span>
         <span class="c1"># Here we ask 3 times and tell 3 times in order to fake asynchronicity</span>
         <span class="n">x2</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">ask</span><span class="p">()</span>
         <span class="n">x3</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">ask</span><span class="p">()</span>
@@ -265,7 +265,7 @@ The function therefore returns 7 + 1 = 8.</p>
         <span class="n">optim</span><span class="o">.</span><span class="n">tell</span><span class="p">(</span><span class="n">x2</span><span class="p">,</span> <span class="n">y2</span><span class="p">)</span>
         <span class="n">optim</span><span class="o">.</span><span class="n">tell</span><span class="p">(</span><span class="n">x3</span><span class="p">,</span> <span class="n">y3</span><span class="p">)</span>
     <span class="n">recommendation</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">recommend</span><span class="p">()</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;* &quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot; provides a vector of parameters with test error &quot;</span><span class="p">,</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"* "</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s2">" provides a vector of parameters with test error "</span><span class="p">,</span>
           <span class="n">myfunction</span><span class="p">(</span><span class="o">*</span><span class="n">recommendation</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">recommendation</span><span class="o">.</span><span class="n">kwargs</span><span class="p">))</span>
 </pre></div>
 </div>
@@ -281,8 +281,8 @@ The function therefore returns 7 + 1 = 8.</p>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">train_and_return_test_error_mixed</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="n">cx</span> <span class="o">=</span> <span class="p">[</span><span class="n">x_</span> <span class="o">-</span> <span class="mf">0.1</span> <span class="k">for</span> <span class="n">x_</span> <span class="ow">in</span> <span class="n">x</span><span class="p">[</span><span class="mi">3</span><span class="p">:]]</span>
-    <span class="n">activation</span> <span class="o">=</span> <span class="n">softmax</span><span class="p">(</span><span class="n">x</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="s2">&quot;tanh&quot;</span><span class="p">,</span> <span class="s2">&quot;sigmoid&quot;</span><span class="p">,</span> <span class="s2">&quot;relu&quot;</span><span class="p">])</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">cx</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.</span> <span class="k">if</span> <span class="n">activation</span> <span class="o">!=</span> <span class="s2">&quot;tanh&quot;</span> <span class="k">else</span> <span class="mf">0.</span><span class="p">)</span>
+    <span class="n">activation</span> <span class="o">=</span> <span class="n">softmax</span><span class="p">(</span><span class="n">x</span><span class="p">[:</span><span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="s2">"tanh"</span><span class="p">,</span> <span class="s2">"sigmoid"</span><span class="p">,</span> <span class="s2">"relu"</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">cx</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.</span> <span class="k">if</span> <span class="n">activation</span> <span class="o">!=</span> <span class="s2">"tanh"</span> <span class="k">else</span> <span class="mf">0.</span><span class="p">)</span>
 
 <span class="n">parametrization</span> <span class="o">=</span> <span class="mi">10</span>  <span class="c1"># you can just provide the size of your input in this case</span>
 
@@ -319,7 +319,7 @@ The function therefore returns 7 + 1 = 8.</p>
 <span class="c1"># of averaging or reevaluate whatever it wants to reevaluate.</span>
 
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Optimization of parameters in reinforcement learning ===============&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Optimization of parameters in reinforcement learning ==============="</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">simulate_and_return_test_error_with_rl</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">noisy</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -329,14 +329,14 @@ The function therefore returns 7 + 1 = 8.</p>
 <span class="n">budget</span> <span class="o">=</span> <span class="mi">1200</span>  <span class="c1"># How many trainings we will do before concluding.</span>
 
 
-<span class="k">for</span> <span class="n">tool</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;TwoPointsDE&quot;</span><span class="p">,</span> <span class="s2">&quot;RandomSearch&quot;</span><span class="p">,</span> <span class="s2">&quot;TBPSA&quot;</span><span class="p">,</span> <span class="s2">&quot;CMA&quot;</span><span class="p">,</span> <span class="s2">&quot;NaiveTBPSA&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;PortfolioNoisyDiscreteOnePlusOne&quot;</span><span class="p">]:</span>
+<span class="k">for</span> <span class="n">tool</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"TwoPointsDE"</span><span class="p">,</span> <span class="s2">"RandomSearch"</span><span class="p">,</span> <span class="s2">"TBPSA"</span><span class="p">,</span> <span class="s2">"CMA"</span><span class="p">,</span> <span class="s2">"NaiveTBPSA"</span><span class="p">,</span>
+        <span class="s2">"PortfolioNoisyDiscreteOnePlusOne"</span><span class="p">]:</span>
 
     <span class="n">optim</span> <span class="o">=</span> <span class="n">ng</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">registry</span><span class="p">[</span><span class="n">tool</span><span class="p">](</span><span class="n">parametrization</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="n">budget</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">budget</span> <span class="o">//</span> <span class="mi">3</span><span class="p">):</span>
         <span class="c1"># Ask and tell can be asynchronous.</span>
-        <span class="c1"># Just be careful that you &quot;tell&quot; something that was asked.</span>
+        <span class="c1"># Just be careful that you "tell" something that was asked.</span>
         <span class="c1"># Here we ask 3 times and tell 3 times in order to fake asynchronicity</span>
         <span class="n">x1</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">ask</span><span class="p">()</span>
         <span class="n">x2</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">ask</span><span class="p">()</span>
@@ -352,7 +352,7 @@ The function therefore returns 7 + 1 = 8.</p>
         <span class="n">optim</span><span class="o">.</span><span class="n">tell</span><span class="p">(</span><span class="n">x3</span><span class="p">,</span> <span class="n">y3</span><span class="p">)</span>
 
     <span class="n">recommendation</span> <span class="o">=</span> <span class="n">optim</span><span class="o">.</span><span class="n">recommend</span><span class="p">()</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;* &quot;</span><span class="p">,</span> <span class="n">tool</span><span class="p">,</span> <span class="s2">&quot; provides a vector of parameters with test error &quot;</span><span class="p">,</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"* "</span><span class="p">,</span> <span class="n">tool</span><span class="p">,</span> <span class="s2">" provides a vector of parameters with test error "</span><span class="p">,</span>
           <span class="n">simulate_and_return_test_error_with_rl</span><span class="p">(</span><span class="o">*</span><span class="n">recommendation</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">noisy</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
 </pre></div>
 </div>
