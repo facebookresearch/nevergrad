@@ -199,7 +199,7 @@ class GymMulti(ExperimentFunction):
         if isinstance(env.action_space, gym.spaces.Tuple):
             assert all(
                 isinstance(p, gym.spaces.MultiDiscrete) for p in env.action_space
-            ), f"{name} has a too complicated structure."
+            ), f"{name} is not tackled properly."
             self.arities = [p.nvec for p in env.action_space]
             if control == "conformant":
                 output_dim = sum(len(a) for a in self.arities)
