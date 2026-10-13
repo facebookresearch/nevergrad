@@ -600,6 +600,14 @@ def test_optimizer_families_repr() -> None:
     assert optim._OptimizerClass.multivariate_optimizer is optlib.OptimisticDiscreteOnePlusOne  # type: ignore
 
 
+def test_metarecentering_one_dimension() -> None:
+    optimizer = optlib.MetaRecentering(parametrization=ng.p.Scalar(), budget=3)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        optimizer.ask()
+    np.testing.assert_equal(optimizer.scale, 1.0)  # type: ignore
+
+
 @pytest.mark.parametrize("name", ["PSO", "DE"])  # type: ignore
 def test_tell_not_asked(name: str) -> None:
     param = ng.p.Scalar()
