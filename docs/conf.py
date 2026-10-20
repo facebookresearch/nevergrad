@@ -79,4 +79,5 @@ linkcheck_ignore = [
     "https://iohprofiler.liacs.nl/",  # server error: bad gateway
     "https://www.facebook.com/whitehat/",  # server error: 500
     r"https://arxiv.org/abs/*",
+    r"https://web\.archive\.org/web/",  # snapshots are stable, and archive.org rate-limits
 ]  # Transient certificate error :(
