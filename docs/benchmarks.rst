@@ -16,7 +16,7 @@ Created with command:
     python -m nevergrad.benchmark noise --seed=12 --repetitions=10 --plot
 
 Here the variance of the noise does not vanish near the optimum.
-TBPSA uses the noise management principles of `pcCMSA-ES <https://homepages.fhv.at/hgb/New-Papers/PPSN16_HB16.pdf>`_ reaching fast convergence rates. We here compare it to a sample of our algorithms; but it performed very well also compared to many other methods.
+TBPSA uses the noise management principles of `pcCMSA-ES <https://doi.org/10.1007/978-3-319-45823-6_3>`_ reaching fast convergence rates. We here compare it to a sample of our algorithms; but it performed very well also compared to many other methods.
 
 .. image:: resources/noise_r400s12_xpresults_namecigar,rotationTrue.png
   :width: 800
