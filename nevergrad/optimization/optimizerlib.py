@@ -1297,7 +1297,7 @@ class _TBPSA(base.Optimizer):
 
 
 class ParametrizedTBPSA(base.ConfiguredOptimizer):
-    """`Test-based population-size adaptation <https://doi.org/10.1007/978-3-319-45823-6_3>`_
+    """`Test-based population-size adaptation <https://web.archive.org/web/20250825200327/https://homepages.fhv.at/hgb/New-Papers/PPSN16_HB16.pdf>`_
     This method, based on adapting the population size, performs the best in
     many noisy optimization problems, even in large dimension
 
@@ -1316,6 +1316,7 @@ class ParametrizedTBPSA(base.ConfiguredOptimizer):
     Evolution under Strong Noise: A Self-Adaptive Evolution Strategy
     Reaches the Lower Performance Bound -- the pcCMSA-ES.
     https://doi.org/10.1007/978-3-319-45823-6_3
+    (free preprint: https://web.archive.org/web/20250825200327/https://homepages.fhv.at/hgb/New-Papers/PPSN16_HB16.pdf)
     """
 
     # pylint: disable=unused-argument
