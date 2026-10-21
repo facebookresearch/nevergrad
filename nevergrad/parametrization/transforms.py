@@ -148,6 +148,30 @@ class BoundTransform(Transform):  # pylint: disable=abstract-method
                 raise ValueError(f"Shapes do not match: {self.shape} and {x.shape}")
 
 
+class BoundScaler(BoundTransform):
+    """Linearly maps finite bounds to the unit interval without overflowing."""
+
+    def __init__(self, lower: BoundType, upper: BoundType) -> None:
+        super().__init__(a_min=lower, a_max=upper)
+        if self.a_min is None or self.a_max is None:
+            raise ValueError("Both bounds must be specified")
+        if not np.isfinite(self.a_min).all() or not np.isfinite(self.a_max).all():
+            raise ValueError("Bounds must be finite")
+        # Halving before adding/subtracting prevents overflow for wide intervals,
+        # for example [-sys.float_info.max, sys.float_info.max].
+        self._center = 0.5 * self.a_min + 0.5 * self.a_max
+        self._half_range = 0.5 * self.a_max - 0.5 * self.a_min
+        self.name = f"Bs({_f(lower)},{_f(upper)})"
+
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        self._check_shape(x)
+        return 0.5 * ((x - self._center) / self._half_range + 1.0)
+
+    def backward(self, y: np.ndarray) -> np.ndarray:
+        self._check_shape(y)
+        return self._center + (2.0 * y - 1.0) * self._half_range
+
+
 class TanhBound(BoundTransform):
     """Bounds all real values into [a_min, a_max] using a tanh transform.
     Beware, tanh goes very fast to its limits.
