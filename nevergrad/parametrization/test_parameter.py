@@ -331,6 +331,28 @@ def test_log() -> None:
     np.testing.assert_almost_equal(log.value, 0.09992, decimal=5)
 
 
+def test_log_accepts_its_own_value() -> None:
+    param = par.Log(init=1e-5, lower=1e-5, upper=1e1)
+    param.spawn_child(param.value)
+
+
+def test_log_upper_bound_round_trip() -> None:
+    param = par.Log(init=1e1, lower=1e-5, upper=1e1)
+    param.spawn_child(param.value)
+
+
+def test_log_accepts_value_within_lower_tolerance() -> None:
+    param = par.Log(init=1e-3, lower=1e-5, upper=1e1)
+    param.value = 9.999999999999989e-06  # about 1e-15 relative, under 1e-12
+    assert param.value == 1e-5
+
+
+def test_log_rejects_value_far_below_lower() -> None:
+    param = par.Log(init=1e-3, lower=1e-5, upper=1e1)
+    with pytest.raises(ValueError, match="can be transformed back"):
+        param.value = 1e-8
+
+
 def test_bounded_scalar() -> None:
     scalar = par.Scalar(lower=0.0, upper=0.6)
     np.testing.assert_almost_equal(scalar.sigma.value, 0.1)
