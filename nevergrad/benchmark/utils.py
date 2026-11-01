@@ -75,6 +75,8 @@ class Selector(pd.DataFrame):  # type: ignore
             return set(self.loc[:, column_s])  # equivalent to df.<name>.unique()
         elif isinstance(column_s, (list, tuple)):
             testing.assert_set_equal(set(column_s) - set(self.columns), {}, err_msg="Unknown column(s)")
+            if not column_s:
+                return set()
             df = self.loc[:, column_s]
             assert not df.isnull().values.any(), "Cannot work with NaN values"
             return set(tuple(row) for row in df.itertuples(index=False))
