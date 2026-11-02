@@ -608,6 +608,20 @@ def test_metarecentering_one_dimension() -> None:
     np.testing.assert_equal(optimizer.scale, 1.0)  # type: ignore
 
 
+@pytest.mark.parametrize("name,budget", [("Cobyla", 100), ("NGOpt", 100), ("Shiwa", 50)])  # type: ignore
+def test_cobyla_no_rhoend_warning(name: str, budget: int) -> None:
+    # NGOpt and Shiwa select Cobyla for these low budgets (see #1702)
+    parametrization = ng.p.Array(shape=(2,)).set_bounds(lower=-5, upper=5)
+    optimizer = optlib.registry[name](parametrization, budget=budget)
+    if name != "Cobyla":
+        assert optimizer._info()["sub-optim"] == "Cobyla"
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("always")
+        optimizer.minimize(lambda x: float(np.sum(x**2)))
+    messages = [str(w.message) for w in record]
+    assert not any("RHOEND" in message for message in messages), messages
+
+
 @pytest.mark.parametrize("name", ["PSO", "DE"])  # type: ignore
 def test_tell_not_asked(name: str) -> None:
     param = ng.p.Scalar()

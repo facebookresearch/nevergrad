@@ -467,6 +467,8 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                             best_x = weakself._normalizer.backward(np.asarray(best_x, dtype=np.float32))
                     num_calls += res[2]
             else:
+                # COBYLA uses tol as its final trust region radius (rhoend), which must be positive:
+                # since scipy 1.16, tol=0 is replaced by 1e-6 with a warning, so pass 1e-6 directly (#1702).
                 res = scipyoptimize.minimize(
                     objective_function,
                     (
@@ -476,7 +478,7 @@ class _NonObjectMinimizeBase(recaster.SequentialRecastOptimizer):
                     ),
                     method=weakself.method,
                     options=options,
-                    tol=0,
+                    tol=1e-6 if weakself.method == "COBYLA" else 0,
                 )
                 if res.fun < best_res:
                     best_res = res.fun
