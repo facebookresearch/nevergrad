@@ -89,6 +89,18 @@ def test_clipping_standardized_data() -> None:
     assert x.value == 10
 
 
+def test_large_finite_bounds_do_not_overflow() -> None:
+    maximum = float(np.finfo(float).max)
+    with np.errstate(over="raise", invalid="raise"):
+        parameter = ng.p.Array(init=np.ones(2)).set_bounds(-maximum, maximum)
+        layer = _datalayers.BoundLayer.filter_from(parameter)[-1]
+        assert not layer.has_finite_range
+        assert not layer.uniform_sampling
+        assert not helpers.Normalizer(parameter).fully_bounded
+        np.testing.assert_array_equal(layer.get_normalized_value(), [0.5, 0.5])
+        assert np.isfinite(parameter.sample().value).all()
+
+
 def test_bound_estimation() -> None:
     param = (_datalayers.Bound(-10, 10)(ng.p.Scalar()) + 3) * 5
     assert param.bounds == (-35, 65)  # type: ignore

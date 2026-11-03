@@ -57,7 +57,7 @@ class BoundLayer(Operation):
             Changes the default behavior of the "sample" method (aka creating a child and mutating it from the current instance)
             or the sampling optimizers, to creating a child with a value sampled uniformly (or log-uniformly) within
             the while range of the bounds. The "sample" method is used by some algorithms to create an initial population.
-            This is activated by default if both bounds are provided.
+            This is activated by default if both bounds are provided and their range is finite.
         """  # TODO improve description of methods
         super().__init__(lower, upper, uniform_sampling)
         self.bounds: tp.Tuple[tp.Optional[np.ndarray], tp.Optional[np.ndarray]] = tuple(  # type: ignore
@@ -66,7 +66,7 @@ class BoundLayer(Operation):
         both_bounds = all(b is not None for b in self.bounds)
         self.uniform_sampling: bool = uniform_sampling  # type: ignore
         if uniform_sampling is None:
-            self.uniform_sampling = both_bounds
+            self.uniform_sampling = self.has_finite_range
         if self.uniform_sampling and not both_bounds:
             raise errors.NevergradValueError("Cannot use full range sampling if both bounds are not set")
         if not (lower is None or upper is None):
@@ -75,10 +75,17 @@ class BoundLayer(Operation):
                     f"Lower bounds {lower} should be strictly smaller than upper bounds {upper}"
                 )
 
+    @property
+    def has_finite_range(self) -> bool:
+        if any(bound is None for bound in self.bounds):
+            return False
+        with np.errstate(over="ignore", invalid="ignore"):
+            return bool(np.isfinite(self.bounds[1] - self.bounds[0]).all())  # type: ignore
+
     def _normalizer(self) -> trans.Transform:
         if any(b is None for b in self.bounds):
             raise RuntimeError("Cannot use normalized value for not-fully bounded Parameter")
-        return trans.Affine(self.bounds[1] - self.bounds[0], self.bounds[0]).reverted()  # type: ignore
+        return trans.BoundScaler(*self.bounds)  # type: ignore
 
     def __call__(self, data: D, inplace: bool = False) -> D:
         """Creates a new Data instance with bounds"""
@@ -100,7 +107,8 @@ class BoundLayer(Operation):
                 for test, bound in zip(tests, self.bounds):
                     val = bound * np.ones(value.shape) if isinstance(value, np.ndarray) else bound[0]  # type: ignore
                     test.value = val
-            state = tests[0].get_standardized_data(reference=tests[1])
+            with np.errstate(over="ignore"):
+                state = tests[0].get_standardized_data(reference=tests[1])
             min_dist = np.min(np.abs(state))
             if min_dist < 3.0:
                 warnings.warn(

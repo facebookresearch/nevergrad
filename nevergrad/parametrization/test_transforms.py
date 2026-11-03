@@ -20,6 +20,7 @@ from . import transforms
     cumdensity2=(transforms.CumulativeDensity(1, 3), "Cd(1,3)"),
     clipping=(transforms.Clipping(None, 1e12), "Cl(None,1000000000000)"),
     bouncing=(transforms.Clipping(-12000, 12000, bounce=True), "Cl(-12000,12000,b)"),
+    bound_scaler=(transforms.BoundScaler(-12, 12), "Bs(-12,12)"),
     fourrier=(transforms.Fourrier(), "F(0)"),
 )
 def test_back_and_forth(transform: transforms.Transform, string: str) -> None:
@@ -94,3 +95,14 @@ def test_multibounds(transform_cls: tp.Type[transforms.BoundTransform], expected
 def test_clipping(transform: transforms.Transform, expected: tp.List[float]) -> None:
     y = transform.forward(np.array([-3, 5]))
     np.testing.assert_array_equal(y, expected)
+
+
+def test_bound_scaler_with_wide_bounds() -> None:
+    maximum = float(np.finfo(float).max)
+    scaler = transforms.BoundScaler(-maximum, maximum)
+    values = np.array([-maximum, 0.0, maximum])
+    with np.errstate(over="raise", invalid="raise"):
+        normalized = scaler.forward(values)
+        restored = scaler.backward(normalized)
+    np.testing.assert_array_equal(normalized, [0.0, 0.5, 1.0])
+    np.testing.assert_array_equal(restored, values)
