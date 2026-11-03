@@ -145,7 +145,7 @@ class Data(core.Parameter):
         descriptors += [
             layer.name
             for layer in self._layers[1:]
-            if not isinstance(layer, (_layering.ArrayCasting, _layering._ScalarCasting))
+            if not isinstance(layer, (_layering.ArrayCasting, _layering._ScalarCasting, _LogLowerClamp))
         ]
         description = "" if not descriptors else "{{{}}}".format(",".join(descriptors))
         return f"{cls}{description}" + _param_string(self.parameters)
@@ -478,6 +478,44 @@ class Scalar(Data):
         self.add_layer(_layering._ScalarCasting())
 
 
+# The log/exp round trip undershoots by a few ulps (~1e-15 relative).
+# 1e-12 covers that and still rejects a genuinely out-of-range value.
+_LOG_LOWER_RELATIVE_TOLERANCE = 1e-12
+
+
+class _LogLowerClamp(_layering.Layered):
+    """Lift a Log value that landed just under its lower bound.
+
+    Only values within ``_LOG_LOWER_RELATIVE_TOLERANCE`` of ``lower`` are
+    raised. Anything further below is left unchanged so the existing bound
+    check still rejects it. The upper bound is not clamped.
+    """
+
+    # Same level as array casting, added after it, so bisect places this
+    # just inside scalar casting and outside the exponent.
+    _LAYER_LEVEL = _layering.Level.ARRAY_CASTING
+
+    def __init__(self, lower: float) -> None:
+        super().__init__()
+        self._lower = lower
+
+    def _clamp_if_near_lower(self, value: np.ndarray) -> np.ndarray:
+        lower = self._lower
+        near_floor = lower * (1.0 - _LOG_LOWER_RELATIVE_TOLERANCE)
+        close = (value < lower) & (value >= near_floor)
+        if not np.any(close):
+            return value
+        clamped = np.array(value, copy=True, dtype=float)
+        clamped[close] = lower
+        return clamped
+
+    def _layered_get_value(self) -> np.ndarray:
+        return self._clamp_if_near_lower(super()._layered_get_value())
+
+    def _layered_set_value(self, value: np.ndarray) -> None:
+        super()._layered_set_value(self._clamp_if_near_lower(value))
+
+
 class Log(Scalar):
     """Parameter representing a positive variable, mutated by Gaussian mutation in log-scale.
 
@@ -535,3 +573,5 @@ class Log(Scalar):
             bound_layer = _datalayers.Bound(*bounds, uniform_sampling=bounded and no_init)  # type: ignore
             bound_layer(self, inplace=True)
         self.add_layer(exp_layer)
+        if lower is not None:
+            self.add_layer(_LogLowerClamp(lower))
