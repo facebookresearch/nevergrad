@@ -204,7 +204,9 @@ class ParametersLogger:
                 for k, (indices, value) in enumerate(np.ndenumerate(element[key])):
                     if k >= max_list_elements:
                         break
-                    flat_data[-1][key + "#" + "_".join(str(i) for i in indices)] = value
+                    flat_data[-1][key + "#" + "_".join(str(i) for i in indices)] = (
+                        value.item() if isinstance(value, np.generic) else value
+                    )
         return flat_data
 
     def to_hiplot_experiment(
