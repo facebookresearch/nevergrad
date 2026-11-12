@@ -1,6 +1,7 @@
 # Changelog
 
 ## main
+- Fix pickling of FCMA / ParametrizedCMA(fcmaes=True) after tell/minimize (#1582).
 
 ## v0.11.0 (2023-07-25)
 - additional benchmarks

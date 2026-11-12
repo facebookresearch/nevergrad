@@ -841,6 +841,35 @@ class _CMA(base.Optimizer):
             return pessimistic
         return cma_best
 
+    def __getstate__(self) -> tp.Dict[str, tp.Any]:
+        # fcmaes.Cmaes stores best_y / n_evals in mmap-backed ctypes values that
+        # cannot be pickled (see #1582). Snapshot them as plain Python numbers.
+        state = self.__dict__.copy()
+        es = state.get("_es")
+        if es is not None and self._config.fcmaes:
+            es_state = vars(es).copy()
+            for name in ("best_y", "n_evals"):
+                value = es_state.get(name)
+                if value is not None and hasattr(value, "value"):
+                    es_state[name] = value.value
+            state["_es"] = {"__fcmaes_cmaes__": True, "cls": type(es), "state": es_state}
+        return state
+
+    def __setstate__(self, state: tp.Dict[str, tp.Any]) -> None:
+        es = state.get("_es")
+        if isinstance(es, dict) and es.get("__fcmaes_cmaes__"):
+            import ctypes
+
+            restored = object.__new__(es["cls"])
+            es_state = dict(es["state"])
+            if "best_y" in es_state and not hasattr(es_state["best_y"], "value"):
+                es_state["best_y"] = ctypes.c_double(float(es_state["best_y"]))
+            if "n_evals" in es_state and not hasattr(es_state["n_evals"], "value"):
+                es_state["n_evals"] = ctypes.c_long(int(es_state["n_evals"]))
+            vars(restored).update(es_state)
+            state["_es"] = restored
+        self.__dict__.update(state)
+
 
 class ParametrizedCMA(base.ConfiguredOptimizer):
     """CMA-ES optimizer,
