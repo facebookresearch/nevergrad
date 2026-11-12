@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import warnings
+import pytest
 from pathlib import Path
 import numpy as np
 import nevergrad.common.typing as tp
@@ -140,6 +141,23 @@ def test_optimize_and_dump(tmp_path: Path) -> None:
     optimizer.dump(filepath)
     optimizer2 = optimizerlib.OnePlusOne.load(filepath)
     np.testing.assert_almost_equal(optimizer2.provide_recommendation().value[0], 1, decimal=2)
+
+
+def test_fcmaes_cma_pickle(tmp_path: Path) -> None:
+    """FCMA (fcmaes) optimizers must remain picklable after tell/minimize (#1582)."""
+    pytest.importorskip("fcmaes")
+    parametrization = ng.p.Array(shape=(6,))
+    optim = optimizerlib.ParametrizedCMA(fcmaes=True, popsize=8)(parametrization=parametrization, budget=16)
+    for _ in range(16):
+        cand = optim.ask()
+        optim.tell(cand, float(np.sum(cand.value**2)))
+    recommendation = np.array(optim.provide_recommendation().value, copy=True)
+    filepath = tmp_path / "dump_fcmaes.pkl"
+    optim.dump(filepath)
+    loaded = optimizerlib._CMA.load(filepath)
+    np.testing.assert_array_equal(loaded.provide_recommendation().value, recommendation)
+    cand = loaded.ask()
+    loaded.tell(cand, float(np.sum(cand.value**2)))
 
 
 def test_compare() -> None:
