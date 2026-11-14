@@ -94,6 +94,27 @@ def test_bound_estimation() -> None:
     assert param.bounds == (-35, 65)  # type: ignore
 
 
+@pytest.mark.parametrize(  # type: ignore
+    "param,expected",
+    [
+        (-ng.p.Scalar(lower=1, upper=5), (-5, -1)),
+        (ng.p.Scalar(lower=1, upper=5) * -1, (-5, -1)),
+        (10 / ng.p.Scalar(lower=1, upper=10), (1, 10)),
+        (0.5 ** ng.p.Scalar(lower=-3, upper=-1), (2, 8)),
+        (-ng.p.Scalar(init=3, lower=1), (None, -1)),
+    ],
+)
+def test_bound_estimation_decreasing_operation(
+    param: ng.p.Scalar, expected: tp.Tuple[tp.Optional[int], tp.Optional[int]]
+) -> None:
+    assert param.bounds == expected  # type: ignore
+    param = param.copy().set_integer_casting()
+    lower = -10 if expected[0] is None else expected[0]
+    for val in range(lower, expected[1] + 1):  # type: ignore
+        param.value = val
+        assert param.value == val
+
+
 def test_softmax_layer() -> None:
     param = ng.p.Array(shape=(4, 3))
     param.random_state.seed(12)
