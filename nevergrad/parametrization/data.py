@@ -130,7 +130,17 @@ class Data(core.Parameter):
         forwardable = _datalayers.ForwardableOperation.filter_from(self)
         forwardable = [x for x in forwardable if x._layer_index > bound_layers[-1]._layer_index]
         for f in forwardable:
-            bounds = tuple(None if b is None else f.forward(b) for b in bounds)  # type: ignore
+            lower, upper = (None if b is None else f.forward(b) for b in bounds)
+            # decreasing operations (eg: multiplication by a negative number) swap the bounds
+            if lower is not None and upper is not None:
+                lower, upper = np.minimum(lower, upper), np.maximum(lower, upper)
+            elif lower is not None or upper is not None:  # compare with the missing bound sent to infinity
+                k = 0 if upper is None else 1
+                with np.errstate(all="ignore"):
+                    other = f.forward(np.full_like(bounds[k], np.inf if k == 0 else -np.inf, dtype=float))
+                if np.all(lower > other if k == 0 else upper < other):
+                    lower, upper = upper, lower
+            bounds = (lower, upper)
         return bounds
 
     @property
