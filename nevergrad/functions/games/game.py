@@ -407,9 +407,7 @@ class Game(ExperimentFunction):
     """
     Parameters
     ----------
-    nint intaum_stocks: number of stocks to be managed
-    depth: number of layers in the neural networks
-    width: number of neurons per hidden layer
+    game: name of the considered game
     """
 
     def __init__(self, game: str = "war") -> None:
@@ -442,3 +440,20 @@ class Game(ExperimentFunction):
         loss = sum([self.function(x) for _ in range(42)]) / 42.0
         assert isinstance(loss, float)
         return loss
+
+
+def ng_game(game=None, policy1=None, policy2=None):
+    """
+    None ==> returns the list of games
+    just the name of the game ==> returns the two dimensions
+    two policies ==> returns  the result
+    """
+
+    if game == None:
+        return _Game().get_list_of_games()
+
+    if policy1 is None or policy2 is None:
+        dim = int(Game(game).dimension / 2)  # Same dimension for both players
+        return dim, dim
+
+    return Game(game).game_object.play_game(game, policy1, policy2)  # policy1 maximizes, policy2 minimizes.
