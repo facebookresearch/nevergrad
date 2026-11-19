@@ -12,7 +12,7 @@ This documentation is a work in progress, feel free to help us update/improve/re
 Quick start
 -----------
 
-:code:`nevergrad` is a Python 3.6+ library. It can be installed with:
+:code:`nevergrad` is a Python 3.8+ library. It can be installed with:
 
 .. code-block:: bash
 
