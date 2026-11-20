@@ -89,7 +89,16 @@ setup(
         "dev": requirements["dev"],
         "benchmark": requirements["bench"],
     },
-    package_data={"nevergrad": ["py.typed", "*.csv", "*.py"]},
+    package_data={
+        "nevergrad": [
+            "py.typed",
+            "*.csv",
+            "*.py",
+            "functions/images/*.png",
+            "functions/lsgo/cdatafiles/*.txt",
+            "functions/photonics/*.npy",
+        ]
+    },
     python_requires=">=3.9",
     cmdclass={"verify_circleci_version": VerifyCircleCiVersionCommand},
 )
