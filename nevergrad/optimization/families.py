@@ -26,6 +26,7 @@ from .optimizerlib import ConfPSO
 from .optimizerlib import ConfSplitOptimizer
 from .optimizerlib import BayesOptim
 from .differentialevolution import DifferentialEvolution
+from .differentialevolution import MultiPopulationDE
 from .es import EvolutionStrategy
 from .recastlib import NonObjectOptimizer
 from .recastlib import Pymoo
@@ -39,6 +40,7 @@ __all__ = [
     "ParametrizedTBPSA",
     "ParametrizedMetaModel",
     "DifferentialEvolution",
+    "MultiPopulationDE",
     "EvolutionStrategy",
     "NonObjectOptimizer",
     "Pymoo",

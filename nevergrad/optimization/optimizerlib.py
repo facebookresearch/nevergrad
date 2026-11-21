@@ -7753,3 +7753,8 @@ ManyLN = ConfPortfolio(
 NgIohMLn = Chaining([MultiLN, CSEC11], ["tenth"]).set_name("NgIohMLn", register=True)
 Zero = RandomSearchMaker(scale=0.0).set_name("Zero", register=True)
 StupidRandom = RandomSearchMaker(stupid=True).set_name("StupidRandom", register=True)
+
+# Multi-population based Differential Evolution (Karkinli, 2023), see MultiPopulationDE.
+# Registered last: the random subset of optimizers tested in test_optimizerlib.py (short_registry)
+# depends on the registry order, so this leaves the tested subset unchanged.
+MDE = MultiPopulationDE().set_name("MDE", register=True)
