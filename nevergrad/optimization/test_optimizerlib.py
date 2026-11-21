@@ -1299,3 +1299,60 @@ def test_weighted_moo_de() -> None:
         for u in DE.pareto_front():
             x = x + u.losses
         assert index == list(x).index(min(x))
+
+
+# MDE has a 3-letter name, so it is never part of the random selection of short_registry in the CI:
+# the following tests make sure it is covered.
+def test_mde_check_optimizer() -> None:
+    check_optimizer(registry["MDE"], budget=300)
+
+
+def test_mde_seeding() -> None:
+    recoms = []
+    for _ in range(2):
+        optim = optlib.MDE(parametrization=4, budget=200)
+        optim.parametrization.random_state.seed(12)
+        recoms.append(optim.minimize(Fitness([0.5, -0.8, 0, 4])).value)
+    np.testing.assert_array_equal(recoms[0], recoms[1])
+
+
+@pytest.mark.parametrize("num_workers", [1, 7, 100])  # type: ignore
+def test_mde_asynchronous(num_workers: int) -> None:
+    param = ng.p.Array(shape=(3,), lower=-1.0, upper=2.0)
+    optim = optlib.MultiPopulationDE(popsize=10)(param, budget=600, num_workers=num_workers)
+    rng = np.random.RandomState(12)
+    pending: tp.List[ng.p.Parameter] = []
+
+    def tell_one() -> None:
+        candidate = pending.pop(rng.randint(len(pending)))  # tells in random order
+        optim.tell(candidate, float(np.sum((candidate.value - 0.5) ** 2)))
+
+    for _ in range(600):
+        pending.append(optim.ask())
+        if len(pending) >= num_workers:
+            tell_one()
+    while pending:
+        tell_one()
+    optim.tell(param.spawn_child(new_value=np.array([0.5, 0.5, 0.5])), 0.0)  # not asked
+    assert optim.num_tell == 601 and optim.num_tell_not_asked == 1
+    assert not optim._pending  # type: ignore
+    assert optim._A.shape == (30, 3)  # type: ignore
+    assert np.all((optim._A >= 0.0) & (optim._A <= 1.0))  # type: ignore
+    assert np.min(optim._fitA) == 0.0  # type: ignore
+    np.testing.assert_array_almost_equal(optim.recommend().value, [0.5, 0.5, 0.5])
+
+
+def test_mde_popsize() -> None:
+    with pytest.raises(ValueError):
+        optlib.MultiPopulationDE(popsize=2)
+    optim = optlib.MultiPopulationDE(popsize=4)(parametrization=2, budget=40)
+    optim.minimize(_square)
+    assert optim._fitA.shape == (12,)  # type: ignore
+
+
+def test_mde_suggest() -> None:
+    optim = optlib.MDE(parametrization=2, budget=100)
+    optim.suggest(np.array([0.5, 0.5]))  # told as "not asked", before the population is initialized
+    optim.minimize(_square)
+    assert np.min(optim._fitA) == 12.0  # type: ignore
+    np.testing.assert_array_equal(optim.recommend().value, [0.5, 0.5])
