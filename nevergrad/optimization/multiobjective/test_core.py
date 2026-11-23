@@ -54,6 +54,21 @@ def test_hypervolume_pareto_with_no_good_point() -> None:
     assert hvol._best_volume == -10  # used in xps
 
 
+@pytest.mark.parametrize("order", [(0, 1, 2), (1, 0, 2)])  # type: ignore
+def test_hypervolume_pareto_with_ties(order: tp.Tuple[int, ...]) -> None:
+    # the first point is dominated by the second one and shares 3 coordinates with it,
+    # the third point extends the front whatever the order of the first two
+    tuples = [(0.5, 0.5, 0.25, 0.5), (0.5, 0.5, 0.25, 0.25), (0.25, 0.75, 0.75, 0.75)]
+    hvol = core.HypervolumePareto(upper_bounds=(1, 1, 1, 1))
+    values = []
+    for k in order:
+        param = ng.p.Tuple(*(ng.p.Scalar(x) for x in tuples[k]))
+        param._losses = np.array(tuples[k])
+        values.append(hvol.add(param))
+    assert values[-1] == -0.14453125
+    assert hvol.best_volume == 0.14453125
+
+
 @pytest.mark.parametrize("losses", [(12, [3, 4]), ([3, 4], 12)])  # type: ignore
 def test_num_losses_error(losses: tp.Tuple[tp.Any, tp.Any]) -> None:
     opt = ng.optimizers.CMA(parametrization=3, budget=100)

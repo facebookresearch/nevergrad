@@ -9,7 +9,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import itertools
 import numpy as np
+import pytest
 
 from .hypervolume import (
     VectorNode,
@@ -311,3 +313,45 @@ def test_reference_no_pointy() -> None:
     )
     volume = hv.compute(front)
     assert volume == -3  # not sure this is expected
+
+
+def brute_force_hypervolume(points: np.ndarray, reference: np.ndarray) -> float:
+    """Inclusion-exclusion over the boxes [point, reference], for a few points within the reference."""
+    volume = 0.0
+    for k in range(1, len(points) + 1):
+        for subset in itertools.combinations(points, k):
+            volume += (-1) ** (k + 1) * np.prod(reference - np.max(subset, axis=0))
+    return volume
+
+
+# the first point is dominated by the second one, and they share their first three coordinates
+TIED_POINTS = np.array([[0.5, 0.5, 0.25, 0.5], [0.5, 0.5, 0.25, 0.25], [0.25, 0.75, 0.75, 0.75]])
+
+
+def test_ties_point_order() -> None:
+    reference = np.ones(4)
+    assert brute_force_hypervolume(TIED_POINTS, reference) == 0.14453125
+    for order in itertools.permutations(range(3)):
+        volume = HypervolumeIndicator(reference).compute(TIED_POINTS[list(order)])
+        assert volume == 0.14453125, f"Wrong volume for points in order {order}"
+
+
+def test_ties_axis_order() -> None:
+    reference = np.ones(4)
+    for axes in itertools.permutations(range(4)):
+        volume = HypervolumeIndicator(reference).compute(TIED_POINTS[:, list(axes)])
+        assert volume == 0.14453125, f"Wrong volume for axes in order {axes}"
+
+
+@pytest.mark.parametrize("dimension", [2, 3, 4, 5])  # type: ignore
+def test_ties_brute_force(dimension: int) -> None:
+    rng = np.random.RandomState(12)
+    reference = np.ones(dimension)
+    for _ in range(100):
+        # few distinct values per coordinate, so that ties and duplicates are frequent
+        points = rng.randint(0, rng.randint(2, 4), size=(rng.randint(3, 9), dimension)) / 4.0
+        expected = brute_force_hypervolume(points, reference)
+        for _ in range(3):
+            rng.shuffle(points)
+            volume = HypervolumeIndicator(reference).compute(points)
+            np.testing.assert_almost_equal(volume, expected, err_msg=f"Wrong volume for {points.tolist()}")

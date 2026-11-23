@@ -26,6 +26,7 @@ class VectorNode:
     The `volume` is the product of the `area` by the difference between the i-th
     coordinate of the self and self.prev[i].
     The `dominated_flag` is used to skip dominated points (see section III.C).
+    `tied[i]` is True if another node of the list has the same i-th coordinate.
     The VectorNode data structure is introduced in section III.A of the original paper..
     """
 
@@ -37,6 +38,7 @@ class VectorNode:
         self._next: tp.List["VectorNode"] = [self for _ in range(self.dimension)]
         self._prev: tp.List["VectorNode"] = [self for _ in range(self.dimension)]
         self.dominated_flag = 0
+        self.tied = np.zeros(self.dimension, dtype=bool)
         self.area = np.zeros(self.dimension)
         self.volume = np.zeros(self.dimension)
 
@@ -87,6 +89,9 @@ class VectorLinkedList:
         for i in range(dimension):
             sorted_node = cls.sort_by_index(nodes, i)
             linked_list.extend(sorted_node, i)
+            for node, next_node in zip(sorted_node, sorted_node[1:]):
+                if node.coordinates[i] == next_node.coordinates[i]:
+                    node.tied[i] = next_node.tied[i] = True
         return linked_list
 
     @staticmethod
@@ -303,7 +308,13 @@ class HypervolumeIndicator:
 
     def skip_dominated_points(self, node: VectorNode, dimension: int) -> None:
         """Implements Algorithm 2, _skipdom_, for skipping dominated points."""
-        if node.dominated_flag >= dimension:
+        # A node flagged in a higher dimension is dominated by nodes that come before it in that
+        # dimension's list. They also come before it in the lists of the lower dimensions, unless
+        # they tie on a coordinate, in which case the node can be sorted first and the area of
+        # its predecessor misses them. So the flag is only reused below if the node has no ties.
+        if node.dominated_flag == dimension or (
+            node.dominated_flag > dimension and not node.tied[dimension : node.dominated_flag].any()
+        ):
             node.area[dimension] = node.prev[dimension].area[dimension]
         else:
             node.area[dimension] = self.recursive_hypervolume(dimension - 1)
