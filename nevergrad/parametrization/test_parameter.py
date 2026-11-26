@@ -412,6 +412,20 @@ def test_array_bounded_initialization() -> None:
     assert array.sigma.value == 0.5
 
 
+@pytest.mark.parametrize("method", ["clipping", "bouncing", "tanh", "arctan"])
+def test_array_column_bounds(method: str) -> None:
+    lower = np.array([-10.0, -20.0, -30.0])
+    upper = -lower
+    parameter = par.Array(init=np.zeros((2, 3))).set_bounds(lower, upper, method=method)
+    parameter.random_state.seed(12)
+    sample = parameter.sample()
+    expected = lower + (upper - lower) * np.random.RandomState(12).uniform(size=(2, 3))
+    np.testing.assert_allclose(sample.value, expected)
+    restored = parameter.spawn_child(sample.value)
+    np.testing.assert_allclose(restored.value, expected)
+    assert restored.dimension == 6
+
+
 @pytest.mark.parametrize("method", ["clipping", "tanh", "constraint", "bouncing"])  # type: ignore
 # @pytest.mark.parametrize("method", ["clipping", "arctan", "tanh", "constraint", "bouncing"])  # type: ignore
 @pytest.mark.parametrize("exponent", [2.0, None])  # type: ignore

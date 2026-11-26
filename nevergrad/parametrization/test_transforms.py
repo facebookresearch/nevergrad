@@ -94,3 +94,31 @@ def test_multibounds(transform_cls: tp.Type[transforms.BoundTransform], expected
 def test_clipping(transform: transforms.Transform, expected: tp.List[float]) -> None:
     y = transform.forward(np.array([-3, 5]))
     np.testing.assert_array_equal(y, expected)
+
+
+@pytest.mark.parametrize("transform_cls", [transforms.Clipping, transforms.TanhBound, transforms.ArctanBound])
+@pytest.mark.parametrize("shape,bound_shape", [((2, 3), (3,)), ((2, 3, 4), (3, 1)), ((2, 3), (2, 1))])
+def test_bounds_broadcast_trailing_axes(
+    transform_cls: tp.Type[transforms.BoundTransform],
+    shape: tp.Tuple[int, ...],
+    bound_shape: tp.Tuple[int, ...],
+) -> None:
+    lower = -np.arange(1, np.prod(bound_shape) + 1, dtype=float).reshape(bound_shape)
+    upper = -lower
+    transform = transform_cls(lower, upper)
+    expanded = transform_cls(np.broadcast_to(lower, shape), np.broadcast_to(upper, shape))
+    values = np.linspace(-0.5, 0.5, np.prod(shape)).reshape(shape)
+    output = transform.forward(values)
+    assert output.shape == shape
+    np.testing.assert_allclose(output, expanded.forward(values))
+    np.testing.assert_allclose(transform.backward(output), values, atol=1e-14)
+
+
+@pytest.mark.parametrize("transform_cls", [transforms.Clipping, transforms.TanhBound, transforms.ArctanBound])
+def test_bounds_reject_nonbroadcastable_trailing_axes(
+    transform_cls: tp.Type[transforms.BoundTransform],
+) -> None:
+    transform = transform_cls(-np.ones(2), np.ones(2))
+    for operation in (transform.forward, transform.backward):
+        with pytest.raises(ValueError, match="Shapes do not match"):
+            operation(np.zeros((2, 3)))
