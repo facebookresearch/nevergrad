@@ -136,6 +136,7 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
         self._running_jobs: tp.List[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = []
         self._finished_jobs: tp.Deque[tp.Tuple[p.Parameter, tp.JobLike[tp.Loss]]] = deque()
         self._sent_warnings: tp.Set[tp.Any] = set()  # no use printing several time the same
+        self._closing = False  # see close()
         # Most optimizers are designed for single objective and use a float loss.
         # To use these in a multi-objective optimization, we provide the negative of
         # the hypervolume of the pareto front as the loss.
@@ -246,6 +247,31 @@ class Optimizer:  # pylint: disable=too-many-instance-attributes
     def load(cls: tp.Type[X], filepath: tp.Union[str, Path]) -> X:
         """Loads a pickle and checks that the class is correct."""
         return load(cls, filepath)
+
+    def close(self) -> None:
+        """Releases the resources held by the optimizer, such as the background thread of
+        optimizers wrapping libraries which call the objective function themselves (eg: scipy).
+        This also closes the sub-optimizers (eg: of a Chaining or a Portfolio).
+        Optimizers can be used as context managers to call this automatically:
+        :code:`with ng.optimizers.Cobyla(parametrization=2, budget=100) as optimizer: ...`
+
+        Note
+        ----
+        The optimizer should not be used for optimization after being closed.
+        """
+        if self.__dict__.get("_closing", False):
+            return  # already closed, or being closed (sub-optimizers referencing their parent)
+        self._closing = True
+        for value in list(self.__dict__.values()):
+            for sub in value if isinstance(value, (list, tuple)) else (value,):
+                if isinstance(sub, Optimizer) and sub is not self:
+                    sub.close()
+
+    def __enter__(self: X) -> X:
+        return self
+
+    def __exit__(self, *exc_info: tp.Any) -> None:
+        self.close()
 
     def __repr__(self) -> str:
         inststr = self.parametrization.name

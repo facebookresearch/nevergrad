@@ -4,6 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 import pickle
+import subprocess
+import sys
 import numpy as np
 import pytest
 import nevergrad as ng
@@ -22,9 +24,18 @@ def fake_caller(func: tp.Callable[[int], int]) -> int:
     return output
 
 
-def what_is_going_wrong_with_this_test_test_automatic_thread_deletion() -> None:
-    thread = recaster.MessagingThread(fake_caller)
+def endless_caller(func: tp.Callable[[int], int]) -> int:
+    while True:
+        func(0)
+
+
+def test_automatic_thread_deletion() -> None:
+    thread = recaster.MessagingThread(endless_caller)
     assert thread.is_alive()
+    inner = thread._thread
+    del thread  # the finalizer stops the thread
+    inner.join(timeout=10)
+    assert not inner.is_alive()
 
 
 def fake_cost_function(x: tp.ArrayLike) -> float:
@@ -181,3 +192,143 @@ def test_recast_pickle(after_ask: bool) -> None:
 
     with pytest.raises(ValueError, match="you should have asked"):
         pickle.dumps(optimizer_2)
+
+
+class EndlessOptimizer(recaster.SequentialRecastOptimizer):
+    """Recast optimizer whose underlying optimization never finishes on its own"""
+
+    swallow_exceptions = False
+
+    def _internal_tell_not_asked(self, candidate: tp.Any, loss: float) -> None:
+        pass  # like recastlib optimizers, so that it can be used in a Chaining
+
+    def get_optimization_function(self) -> tp.Callable[[tp.Callable[..., tp.Any]], tp.ArrayLike]:
+        dimension = self.dimension
+        swallow = self.swallow_exceptions
+
+        def optim_function(func: tp.Callable[..., tp.Any]) -> tp.ArrayLike:
+            while True:
+                try:
+                    func(np.zeros(dimension))
+                except Exception:  # pylint: disable=broad-except
+                    if not swallow:  # mimics libraries catching exceptions around evaluations
+                        raise
+
+        return optim_function
+
+
+class SwallowingOptimizer(EndlessOptimizer):
+    swallow_exceptions = True
+
+
+def _thread(optimizer: tp.Any) -> tp.Any:
+    assert optimizer._messaging_thread is not None
+    return optimizer._messaging_thread._thread
+
+
+def test_recast_thread_stops_when_budget_is_spent() -> None:
+    optimizer = EndlessOptimizer(parametrization=2, budget=10)
+    optimizer.minimize(fake_cost_function)
+    thread = _thread(optimizer)
+    thread.join(timeout=10)
+    assert not thread.is_alive()
+    with pytest.warns(ng.errors.FinishedUnderlyingOptimizerWarning):
+        optimizer.ask()  # random point, as if the underlying optimizer had converged
+
+
+@pytest.mark.parametrize("cls", [EndlessOptimizer, SwallowingOptimizer])  # type: ignore
+def test_recast_close(cls: tp.Type[EndlessOptimizer]) -> None:
+    optimizer = cls(parametrization=2, budget=10)
+    optimizer.tell(optimizer.ask(), 1.0)
+    thread = _thread(optimizer)
+    assert thread.is_alive()
+    optimizer.close()  # waits for the thread
+    assert not thread.is_alive()
+    optimizer.close()  # idempotent
+
+
+def test_recast_context_manager() -> None:
+    with EndlessOptimizer(parametrization=2, budget=10) as optimizer:
+        optimizer.ask()
+        thread = _thread(optimizer)
+        assert thread.is_alive()
+    assert not thread.is_alive()
+
+
+def test_recast_stop_survives_reference_cycle() -> None:
+    optimizer = SwallowingOptimizer(parametrization=2, budget=10)
+    optimizer.tell(optimizer.ask(), 1.0)
+    setattr(optimizer, "myself", optimizer)  # a reference cycle: deletion would require garbage collection
+    thread = _thread(optimizer)
+    optimizer.close()
+    assert not thread.is_alive()
+
+
+def test_chaining_stops_recast_threads() -> None:
+    # the recast optimizer is done after its budget of 5: its thread stops right away
+    chain: tp.Any = optimizerlib.Chaining([EndlessOptimizer, optimizerlib.OnePlusOne], [5])(2, budget=20)
+    chain.minimize(fake_cost_function)
+    thread = _thread(chain.optimizers[0])
+    thread.join(timeout=10)
+    assert not thread.is_alive()
+    # the recast optimizer is still running: closing the chain closes it
+    chain = optimizerlib.Chaining([optimizerlib.OnePlusOne, EndlessOptimizer], [5])(2, budget=100)
+    for _ in range(10):
+        chain.tell(chain.ask(), 1.0)
+    thread = _thread(chain.optimizers[1])
+    assert thread.is_alive()
+    chain.close()
+    assert not thread.is_alive()
+
+
+_EXIT_SCRIPT_HEADER = """
+import warnings
+import numpy as np
+from nevergrad.optimization import optimizerlib, recaster
+warnings.filterwarnings("ignore")
+
+
+class EndlessOptimizer(recaster.SequentialRecastOptimizer):
+    def get_optimization_function(self):
+        dimension = self.dimension
+
+        def optim_function(func):
+            while True:
+                func(np.zeros(dimension))
+
+        return optim_function
+
+
+def cost(x):
+    return float(np.sum(np.asarray(x) ** 2))
+"""
+
+_EXIT_SCRIPTS = {
+    "budget_spent": """
+optimizer = EndlessOptimizer(parametrization=2, budget=10)
+optimizer.minimize(cost)
+""",
+    "context_manager": """
+with EndlessOptimizer(parametrization=2, budget=10) as optimizer:
+    optimizer.tell(optimizer.ask(), 1.0)
+""",
+    "chaining_with_scipy": """
+chaining = optimizerlib.Chaining([optimizerlib.Cobyla, optimizerlib.OnePlusOne, optimizerlib.SQP], ["tenth", "most"])
+optimizer = chaining(parametrization=3, budget=60)
+optimizer.minimize(cost)
+""",
+}
+
+
+@pytest.mark.parametrize("name", list(_EXIT_SCRIPTS))  # type: ignore
+def test_recast_interpreter_exit_does_not_hang(name: str) -> None:
+    # the optimizer is kept at module level until interpreter shutdown, which used to
+    # wait forever for its background thread
+    result = subprocess.run(
+        [sys.executable, "-c", _EXIT_SCRIPT_HEADER + _EXIT_SCRIPTS[name]],
+        timeout=120,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
