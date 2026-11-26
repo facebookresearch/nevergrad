@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import warnings
+from collections import deque
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.parametrization import parameter as p
@@ -420,3 +421,167 @@ RotationInvariantDE = DifferentialEvolution(crossover=1.0, popsize="dimension").
 
 # Excellent for hyperparameter tuning.
 DiscreteDE = DifferentialEvolution(crossover="dimension").set_name("DiscreteDE", register=True)
+
+
+# Multi-population based Differential Evolution (MDE)
+# Karkinli, A.E. (2023). Neural Computing and Applications, 35, 5193-5206.
+# https://doi.org/10.1007/s00521-022-07969-w
+# Reference implementation (MIT): https://github.com/Aekarkinli/Multi-Population-based-Differential-Evolution-Algorithm
+
+
+def _mde_scale(rng: np.random.RandomState) -> float:
+    """scale = |a - rand^b| * randn^d, with a ~ U{0, 1}, b ~ U{1..10}, d ~ U{1..5}"""
+    return float(abs(rng.randint(0, 2) - rng.rand() ** rng.randint(1, 11)) * rng.randn() ** rng.randint(1, 6))
+
+
+def _mde_trial(B: np.ndarray, best: np.ndarray, noise: np.ndarray, rng: np.random.RandomState) -> np.ndarray:
+    """Mutation and parameter-free crossover of MDE (Eqs. 7-14 of the paper)"""
+    N, D = B.shape
+    temp = np.empty_like(B)
+    for i in range(N):
+        scale = _mde_scale(rng)
+        while True:  # two distinct random members, both different from i
+            r1, r2 = rng.choice(N, 2, replace=False)
+            if r1 != i and r2 != i:
+                break
+        dx = np.where(rng.rand(D) < 0.5, B[r1], best)  # random / elitist component
+        dy = np.where(rng.rand(D) < 0.5, B[i], B[r2])
+        temp[i] = B[r2] + scale * (dx - dy)
+    c = 1 if rng.rand() ** rng.randint(1, 6) < 0.5 else D
+    cmap = np.abs(rng.randint(0, 2, (N, c)) - rng.rand(N, D) ** rng.randint(1, 6, (N, c))) < 0.5
+    return B + cmap * (temp + noise - B)  # type: ignore
+
+
+def _mde_noise(B: np.ndarray, rng: np.random.RandomState) -> np.ndarray:
+    """noise = B * 10^phi * (rand(N, 1) - 0.5), with phi ~ U{-12..-9} (Eq. 13)"""
+    N, D = B.shape
+    return B * 10.0 ** rng.randint(-12, -8, (N, D)) * (rng.rand(N, 1) - 0.5)  # type: ignore
+
+
+class _MDE(base.Optimizer):
+    """Multi-population based Differential Evolution, see :code:`MultiPopulationDE`"""
+
+    def __init__(
+        self,
+        parametrization: base.IntOrParameter,
+        budget: tp.Optional[int] = None,
+        num_workers: int = 1,
+        config: tp.Optional["MultiPopulationDE"] = None,
+    ) -> None:
+        super().__init__(parametrization, budget=budget, num_workers=num_workers)
+        self._config = MultiPopulationDE() if config is None else config
+        self.popsize = self._config.popsize  # N: size of the sub-population evolved at each iteration
+        self._full_size = 3 * self.popsize  # size of the full population A
+        self._MULTIOBJECTIVE_AUTO_BOUND = max(self._MULTIOBJECTIVE_AUTO_BOUND, self._full_size)  # type: ignore
+        self._penalize_cheap_violations = True
+        # The algorithm works in the [0, 1]^D box of the normalizer: bounded variables are mapped
+        # linearly onto [0, 1] and unbounded ones through an arctan transform.
+        # The population is initialized lazily (at the first ask or tell), so that seeding the
+        # parametrization after the instantiation of the optimizer is taken into account.
+        self._normalizer: tp.Optional[p.helpers.Normalizer] = None
+        self._A = np.zeros((0, self.dimension))  # full population, in [0, 1]^D
+        self._fitA = np.zeros(0)  # losses of the full population (inf until evaluated)
+        self._j0: tp.Optional[np.ndarray] = None  # indices in A of the current sub-population B
+        self._noise = np.zeros((self.popsize, self.dimension))
+        self._queue: tp.Deque[tp.Tuple[int, np.ndarray]] = deque()  # (index in A, point) to be asked
+        self._pending: tp.Dict[str, tp.Tuple[int, np.ndarray]] = {}  # uid -> (index in A, point)
+
+    def _initialize(self) -> None:
+        """Uniform initialization of the full population, whose points are then all asked first"""
+        self._normalizer = p.helpers.Normalizer(self.parametrization)
+        self._A = self._rng.rand(self._full_size, self.dimension)
+        self._fitA = np.full(self._full_size, np.inf)
+        self._queue.extend(enumerate(self._A.copy()))
+
+    def _start_iteration(self) -> None:
+        """Creates the trial points of a new iteration from the current state of the full population"""
+        rng = self._rng
+        N, D = self.popsize, self.dimension
+        if self._j0 is not None:  # noise is computed from the updated previous sub-population
+            self._noise = _mde_noise(self._A[self._j0], rng)
+        best = self._A[int(np.argmin(self._fitA))]
+        self._j0 = rng.permutation(self._full_size)[:N]
+        trial = _mde_trial(self._A[self._j0], best, self._noise, rng)
+        out = (trial < 0.0) | (trial > 1.0)  # Eq. 15: resample out-of-bounds variables within bounds
+        if out.any():
+            trial = np.where(out, rng.rand(N, D), trial)
+        self._queue.extend(zip(self._j0.tolist(), trial))
+
+    def _internal_ask_candidate(self) -> p.Parameter:
+        if self._normalizer is None:
+            self._initialize()
+        if not self._queue:
+            self._start_iteration()
+        index, point = self._queue.popleft()
+        data = self._normalizer.backward(point)  # type: ignore
+        candidate = self.parametrization.spawn_child().set_standardized_data(data)
+        self._pending[candidate.uid] = (index, point)
+        return candidate
+
+    def _internal_tell_candidate(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        info = self._pending.pop(candidate.uid, None)
+        if info is None:
+            self._internal_tell_not_asked(candidate, loss)
+            return
+        index, point = info
+        if loss < self._fitA[index]:  # greedy replacement of the targeted population member
+            self._A[index] = point
+            self._fitA[index] = loss
+
+    def _internal_tell_not_asked(self, candidate: p.Parameter, loss: tp.FloatLoss) -> None:
+        if self._normalizer is None:
+            self._initialize()
+        data = candidate.get_standardized_data(reference=self.parametrization)
+        point = np.clip(self._normalizer.forward(data), 0.0, 1.0)  # type: ignore
+        worst = int(np.argmax(self._fitA))
+        if loss < self._fitA[worst]:  # replaces the worst member of the full population if better
+            self._A[worst] = point
+            self._fitA[worst] = loss
+
+
+class MultiPopulationDE(base.ConfiguredOptimizer):
+    """Multi-population based Differential Evolution (MDE).
+
+    MDE keeps a full population of :code:`3 * popsize` vectors. At each iteration, a sub-population
+    of :code:`popsize` distinct members is drawn at random from it and evolved with a parameter-free
+    mutation (random scale factor :code:`|a - rand^b| * randn^d` and random mixing of random and best
+    individuals) and a parameter-free crossover. Out-of-bounds variables are resampled uniformly
+    within the bounds, each trial vector replaces its parent if it is better (greedy selection),
+    and the sub-population is written back into the full population. Apart from the population size,
+    MDE has no control parameter (no F, no CR).
+
+    Reference: Karkinli, A.E. (2023). Detection of object boundary from point cloud by using
+    multi-population based differential evolution algorithm.
+    Neural Computing and Applications, 35, 5193-5206. https://doi.org/10.1007/s00521-022-07969-w
+
+    Original implementation: https://github.com/Aekarkinli/Multi-Population-based-Differential-Evolution-Algorithm
+
+    Parameters
+    ----------
+    popsize: int
+        size N of the sub-population evolved at each iteration (at least 3).
+        The full population holds 3 * N vectors, which are all evaluated first,
+        then each iteration costs N evaluations.
+
+    Note
+    ----
+    - The algorithm works in the normalized space :code:`[0, 1]^D` of :code:`p.helpers.Normalizer`.
+      Bounded variables are mapped linearly onto [0, 1], so that the uniform initialization and the
+      resampling of out-of-bounds variables happen within the bounds. Unbounded variables are mapped
+      through an arctan transform: their initialization is Cauchy-like around the initial value and
+      the whole real line remains reachable.
+    - With :code:`num_workers=1` and sequential ask/tell, the iterations follow the original algorithm.
+      Otherwise, the points of an iteration are generated as soon as those of the previous one have
+      all been asked, from the current state of the population, and each told point is compared to
+      the current population member it targets. Points told without being asked replace the worst
+      member of the full population if they are better.
+    """
+
+    def __init__(self, *, popsize: int = 30) -> None:
+        super().__init__(_MDE, locals(), as_config=True)
+        if popsize < 3:
+            raise ValueError("popsize must be at least 3 for MDE")
+        self.popsize = popsize
+
+
+# MDE = MultiPopulationDE() is registered at the end of optimizerlib.py
