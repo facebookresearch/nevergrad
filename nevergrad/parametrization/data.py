@@ -198,7 +198,7 @@ class Data(core.Parameter):
             Changes the default behavior of the "sample" method (aka creating a child and mutating it from the current instance)
             or the sampling optimizers, to creating a child with a value sampled uniformly (or log-uniformly) within
             the while range of the bounds. The "sample" method is used by some algorithms to create an initial population.
-            This is activated by default if both bounds are provided.
+            This is activated by default if both bounds are provided and their range is finite.
 
         Notes
         -----

@@ -147,10 +147,7 @@ def deterministic_sampling(parameter: core.Parameter) -> tp.Iterator[None]:
 def _fully_bounded_layers(data: pdata.Data) -> tp.List[_datalayers.BoundLayer]:
     """Extract fully bounded layers of a Data parameter"""
     layers = _datalayers.BoundLayer.filter_from(data)  # find bound layers
-    layers = [  # keep only fully bounded layers
-        lay for lay in layers if not any(b is None for b in lay.bounds)
-    ]
-    return layers
+    return [layer for layer in layers if layer.has_finite_range]
 
 
 class Normalizer:
