@@ -6,7 +6,7 @@ Getting started
 Installing
 ----------
 
-Nevergrad is a Python 3.6+ library. It can be installed with:
+Nevergrad is a Python 3.11+ library. It can be installed with:
 
 .. code-block:: bash
 

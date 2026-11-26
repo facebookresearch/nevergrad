@@ -2,6 +2,8 @@
 
 ## main
 
+- Require Python 3.11 or later: Python 3.9 and 3.10 have reached end of life, and CI only runs Python 3.11.
+
 ## v0.11.0 (2023-07-25)
 - additional benchmarks
 - adding tests in the CI
