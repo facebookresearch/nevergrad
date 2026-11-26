@@ -143,7 +143,7 @@ class BoundTransform(Transform):  # pylint: disable=abstract-method
         self.shape: tp.Tuple[int, ...] = self.a_min.shape if self.a_min is not None else self.a_max.shape
 
     def _check_shape(self, x: np.ndarray) -> None:
-        for dims in itertools.zip_longest(x.shape, self.shape, fillvalue=1):
+        for dims in itertools.zip_longest(reversed(x.shape), reversed(self.shape), fillvalue=1):
             if dims[0] != dims[1] and not any(x == 1 for x in dims):  # same or broadcastable
                 raise ValueError(f"Shapes do not match: {self.shape} and {x.shape}")
 
