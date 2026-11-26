@@ -3988,7 +3988,7 @@ def pbo_suite(seed: tp.Optional[int] = None, reduced: bool = False) -> tp.Iterat
                         func = iohprofiler.PBOFunction(fid, iid, dim, instrumentation=instrumentation)
                         func.add_descriptors(instrum_str=instrumentation)
                     except ModuleNotFoundError as e:
-                        raise fbase.UnsupportedExperiment("IOHexperimenter needs to be installed") from e
+                        raise fbase.UnsupportedExperiment("ioh needs to be installed") from e
                     for optim in list_optims:
                         for nw in [1, 10]:
                             for budget in [100, 1000, 10000]:
