@@ -5,7 +5,7 @@ on:
       - main
 jobs:
   docs-links:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # ubuntu-latest (26.04) cannot build IOHexperimenter 0.2.x
     steps:
       - uses: actions/setup-python@v5
         with:
