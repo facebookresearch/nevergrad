@@ -55,6 +55,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#optimizer-api">Optimizer API</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#nevergrad.optimizers.base.Optimizer"><code class="docutils literal notranslate"><span class="pre">Optimizer</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#nevergrad.optimizers.base.Optimizer.ask"><code class="docutils literal notranslate"><span class="pre">Optimizer.ask()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#nevergrad.optimizers.base.Optimizer.close"><code class="docutils literal notranslate"><span class="pre">Optimizer.close()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#nevergrad.optimizers.base.Optimizer.dimension"><code class="docutils literal notranslate"><span class="pre">Optimizer.dimension</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#nevergrad.optimizers.base.Optimizer.dump"><code class="docutils literal notranslate"><span class="pre">Optimizer.dump()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#nevergrad.optimizers.base.Optimizer.enable_pickling"><code class="docutils literal notranslate"><span class="pre">Optimizer.enable_pickling()</span></code></a></li>
@@ -345,6 +346,20 @@ which can be directly used on the function (<code class="code docutils literal n
 <dd class="field-even"><p><a class="reference internal" href="parametrization_ref.html#nevergrad.p.Parameter" title="nevergrad.p.Parameter">p.Parameter</a></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="nevergrad.optimizers.base.Optimizer.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#nevergrad.optimizers.base.Optimizer.close" title="Permalink to this definition"></a></dt>
+<dd><p>Releases the resources held by the optimizer, such as the background thread of
+optimizers wrapping libraries which call the objective function themselves (eg: scipy).
+This also closes the sub-optimizers (eg: of a Chaining or a Portfolio).
+Optimizers can be used as context managers to call this automatically:
+<code class="code docutils literal notranslate"><span class="pre">with</span> <span class="pre">ng.optimizers.Cobyla(parametrization=2,</span> <span class="pre">budget=100)</span> <span class="pre">as</span> <span class="pre">optimizer:</span> <span class="pre">...</span></code></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The optimizer should not be used for optimization after being closed.</p>
+</div>
 </dd></dl>
 
 <dl class="py property">
