@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import random
+import pytest
 import numpy as np
 import nevergrad as ng
 import nevergrad.common.typing as tp
@@ -142,3 +143,44 @@ def test_nsga2_ranking_4():
     loss_from_rank = [r.loss for r in candidates[:n_selected]]
     loss_from_sorted = [np.array(v) for v in sorted(loss_values)[:n_selected]]
     assert loss_from_rank == loss_from_sorted
+
+
+@pytest.mark.parametrize(
+    "losses1,losses2,expected",
+    [
+        ([0, 1, 2], [2, 0, 1], 0),
+        ([0, 0, 3], [1, 1, 0], 0),
+        ([0, 1, 1], [1, 1, 2], -1),
+        ([1, 1, 2], [0, 1, 1], 1),
+        ([1, 1, 1], [1, 1, 1], 0),
+        ([0], [1], -1),
+    ],
+)
+def test_pareto_dominance(losses1, losses2, expected) -> None:
+    candidates = [ng.p.Scalar(), ng.p.Scalar()]
+    candidates[0]._losses = np.array(losses1)
+    candidates[1]._losses = np.array(losses2)
+    assert nsga2.FastNonDominatedRanking().compare(*candidates) == expected
+
+
+def test_three_objective_non_dominated_front() -> None:
+    candidates = [ng.p.Scalar() for _ in range(3)]
+    for candidate, losses in zip(candidates, [[0, 1, 2], [2, 0, 1], [1, 2, 0]]):
+        candidate._losses = np.array(losses)
+    frontiers = nsga2.FastNonDominatedRanking().compute_ranking(candidates)
+    assert len(frontiers) == 1
+    assert set(frontiers[0]) == set(candidates)
+
+
+def test_evolution_strategy_three_objective_ask_tell() -> None:
+    optimizer = ng.optimizers.EvolutionStrategy(popsize=1, offsprings=3, only_offsprings=True)(
+        parametrization=ng.p.Scalar(), budget=60
+    )
+    optimizer.parametrization.random_state.seed(12)
+    optimizer.tell(ng.p.MultiobjectiveReference(), [4, 4, 4])
+    losses = [[3, 3, 3], [0, 1, 2], [2, 0, 1], [1, 2, 0]]
+    for index in range(len(losses)):
+        optimizer.suggest(index)
+        candidate = optimizer.ask()
+        optimizer.tell(candidate, losses[int(candidate.value)])
+    assert np.isfinite(optimizer.ask().value)

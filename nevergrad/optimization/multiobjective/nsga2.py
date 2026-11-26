@@ -126,9 +126,9 @@ class FastNonDominatedRanking:
         """
         one_wins = np.sum(candidate1.losses < candidate2.losses)
         two_wins = np.sum(candidate2.losses < candidate1.losses)
-        if one_wins > two_wins:
+        if one_wins > 0 and two_wins == 0:
             return -1
-        if two_wins > one_wins:
+        if two_wins > 0 and one_wins == 0:
             return 1
         return 0
 
