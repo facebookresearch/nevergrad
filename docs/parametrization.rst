@@ -142,7 +142,7 @@ Parametrizing external code
 ---------------------------
 
 
-Sometimes it is completely impractical or impossible to have a simple Python3.6+ function to optimize. This may happen when the code you want to optimize is a script. Even more so if the code you want to optimize is not Python3.6+.
+Sometimes it is completely impractical or impossible to have a simple Python function to optimize. This may happen when the code you want to optimize is a script. Even more so if the code you want to optimize is not Python.
 
 We provide tooling for this situation but this is hacky, so if you can avoid it, **do avoid it**. Otherwise, go through these steps to instrument your code:
 
