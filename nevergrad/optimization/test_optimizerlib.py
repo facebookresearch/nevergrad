@@ -175,6 +175,9 @@ UNSEEDABLE: tp.List[str] = [
 ]
 
 
+NATIVE_DS = ["DSbase", "DSproba", "DSsubspace", "DS3p"]  # native direct search methods
+
+
 def buggy_function(x: np.ndarray) -> float:
     if any(x[::2] > 0.0):
         return float("nan")
@@ -480,7 +483,7 @@ def recomkeeper() -> tp.Generator[RecommendationKeeper, None, None]:
 
 
 # pylint: disable=redefined-outer-name
-@pytest.mark.parametrize("name", short_registry)  # type: ignore
+@pytest.mark.parametrize("name", short_registry + NATIVE_DS)  # type: ignore
 def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper) -> None:
     if any(x in name for x in ["SMAC", "BO", "AX"]) and CI:
         raise SkipTest("too slow for CI!")
@@ -488,7 +491,6 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         name in UNSEEDABLE
         or "BAR" in name
         or "AX" in name
-        or "DS" in name
         or ("Carola" in name and any(x in name for x in ["8", "9", "1"]))
         or (name[0] == "F" or name[-1] == "F")
     ):
@@ -501,7 +503,7 @@ def test_optimizers_recommendation(name: str, recomkeeper: RecommendationKeeper)
         raise SkipTest("SMAC is too slow for the 20s limit")
     if "Sqrt" in name[:5] or "Log" in name[:5] or "Multi" in name[:6] or name == "BFGSCMA":
         raise SkipTest("Let us skip combinations.")
-    if len(name) > 8:
+    if len(name) > 8 and name not in NATIVE_DS:
         raise SkipTest("Let us check only compact methods.")
     # set up environment
     optimizer_cls = registry[name]
@@ -697,7 +699,7 @@ def test_optimization_discrete_with_one_sample() -> None:
 #    assert pval < 0.4, f"P-Value for smooth methods = {pval}."
 
 
-@pytest.mark.parametrize("name", ["TBPSA", "PSO", "TwoPointsDE", "CMA", "BO"])  # type: ignore
+@pytest.mark.parametrize("name", ["TBPSA", "PSO", "TwoPointsDE", "CMA", "BO"] + NATIVE_DS)  # type: ignore
 def test_optim_pickle(name: str) -> None:
     # some generic class can fail to be pickled:
     # example of work around:
@@ -709,6 +711,268 @@ def test_optim_pickle(name: str) -> None:
     optim = registry[name](parametrization=12, budget=100, num_workers=2)
     with tempfile.TemporaryDirectory() as folder:
         optim.dump(Path(folder) / "dump_test.pkl")
+
+
+def _ds_run(
+    name: str, seed: int, dim: int = 3, budget: int = 60, num_workers: int = 1
+) -> tp.List[np.ndarray]:
+    param = ng.p.Array(shape=(dim,))
+    param.random_state.seed(seed)
+    optim = registry[name](param, budget=budget, num_workers=num_workers)
+    fitness = Fitness(np.arange(dim) / dim)
+    asked = []
+    for _ in range(budget // num_workers):
+        candidates = [optim.ask() for _ in range(num_workers)]
+        for cand in candidates:
+            asked.append(cand.value)
+            optim.tell(cand, fitness(cand.value))
+    return asked
+
+
+@pytest.mark.parametrize("num_workers", [1, 4])  # type: ignore
+@pytest.mark.parametrize("dim", [2, 5, 10])  # type: ignore
+@pytest.mark.parametrize("name", ["DSbase", "DSproba", "DSsubspace"])  # type: ignore
+def test_direct_search_sphere(name: str, dim: int, num_workers: int) -> None:
+    optimum = np.linspace(-1.0, 1.0, dim)
+    param = ng.p.Array(shape=(dim,))
+    param.random_state.seed(12)
+    budget = (200 if name == "DSbase" else 100) * dim  # coordinate search needs O(dim ** 2) evaluations
+    optim = registry[name](param, budget=budget, num_workers=num_workers)
+    with testing.suppress_nevergrad_warnings():  # num_workers > 1 run sequentially
+        recom = optim.minimize(lambda x: float(np.sum((x - optimum) ** 2)))
+    np.testing.assert_array_almost_equal(recom.value, optimum, decimal=3)
+
+
+@pytest.mark.parametrize("num_workers", [1, 4])  # type: ignore
+@pytest.mark.parametrize("dim", [2, 5, 10])  # type: ignore
+def test_ds3p_sphere(dim: int, num_workers: int) -> None:
+    optimum = np.linspace(-1.0, 1.0, dim)
+    param = ng.p.Array(shape=(dim,))
+    param.random_state.seed(12)
+    budget = 400 * dim
+    optim = optlib.DS3p(param, budget=budget, num_workers=num_workers)
+    with testing.suppress_nevergrad_warnings():  # num_workers > 1 run sequentially
+        recom = optim.minimize(lambda x: float(np.sum((x - optimum) ** 2)))
+    # the precision is limited by the decreasing step size schedule alpha_k = 1 / sqrt(k + 1)
+    final_step = 1.0 / np.sqrt(budget / (2 * ((num_workers + 1) // 2)))
+    assert np.linalg.norm(recom.value - optimum) < final_step
+
+
+@pytest.mark.parametrize("name", NATIVE_DS)  # type: ignore
+def test_direct_search_deterministic(name: str) -> None:
+    for num_workers in [1, 4]:
+        run1, run2 = (_ds_run(name, 12, num_workers=num_workers) for _ in range(2))
+        np.testing.assert_array_equal(run1, run2)
+        other = _ds_run(name, 13, num_workers=num_workers)
+        if name == "DSbase" and num_workers == 1:  # no randomness at all
+            np.testing.assert_array_equal(run1, other)
+        else:  # DSbase polls random directions when workers are waiting for the last coordinate polls
+            assert not np.array_equal(run1, other)
+
+
+def test_dssubspace_dimension_one_is_dsproba() -> None:
+    def run(optimizer: base.ConfiguredOptimizer) -> tp.List[np.ndarray]:
+        param = ng.p.Array(shape=(5,))
+        param.random_state.seed(12)
+        optim = optimizer(param, budget=50)
+        fitness = Fitness([0.1, 0.2, -0.3, 0.4, 0.0])
+        asked = []
+        for _ in range(50):
+            cand = optim.ask()
+            asked.append(cand.value)
+            optim.tell(cand, fitness(cand.value))
+        return asked
+
+    np.testing.assert_array_equal(
+        run(optlib.DSproba), run(optlib.ParametrizedDSsubspace(subspace_dimension=1))
+    )
+
+
+def test_dsproba_update_rule() -> None:
+    param = ng.p.Array(shape=(4,))
+    param.random_state.seed(12)
+    optim = optlib.ParametrizedDSproba(initial_step=0.5, expansion=3.0, contraction=0.25)(param, budget=20)
+    x0 = optim.ask()  # first evaluates the initial point
+    np.testing.assert_array_equal(x0.value, np.zeros(4))
+    optim.tell(x0, 1.0)
+    # failure on d, then -d is polled: contraction
+    c1 = optim.ask()
+    np.testing.assert_almost_equal(np.linalg.norm(c1.value), 0.5)
+    optim.tell(c1, 2.0)
+    c2 = optim.ask()
+    np.testing.assert_array_almost_equal(c2.value, -c1.value)
+    optim.tell(c2, 1.0)  # no decrease at all: failure
+    # new random direction with contracted step
+    c3 = optim.ask()
+    np.testing.assert_almost_equal(np.linalg.norm(c3.value), 0.5 * 0.25)
+    # simple decrease is not enough
+    optim.tell(c3, 1.0 - 0.5 * 1e-3 * (0.5 * 0.25) ** 2)
+    c4 = optim.ask()
+    np.testing.assert_array_almost_equal(c4.value, -c3.value)
+    optim.tell(c4, 0.5)  # sufficient decrease: move and expand
+    c5 = optim.ask()
+    np.testing.assert_almost_equal(np.linalg.norm(c5.value - c4.value), 0.5 * 0.25 * 3.0)
+    optim.tell(c5, 1.0)
+    # a better tell-not-asked point becomes the incumbent
+    other = param.spawn_child().set_standardized_data(np.ones(4))
+    optim.tell(other, 0.1)
+    c6 = optim.ask()
+    np.testing.assert_almost_equal(np.linalg.norm(c6.value - np.ones(4)), 0.5 * 0.25 * 3.0)
+
+
+def test_dsbase_update_rule() -> None:
+    param = ng.p.Array(shape=(3,))
+    optim = optlib.ParametrizedDSbase(initial_step=0.5, expansion=3.0, contraction=0.25)(param, budget=50)
+    x0 = optim.ask()  # first evaluates the initial point
+    np.testing.assert_array_equal(x0.value, np.zeros(3))
+    optim.tell(x0, 1.0)
+    eye = np.eye(3)
+    # the coordinate directions e_1, -e_1, ..., e_n, -e_n are polled in turn
+    for k in range(3):
+        for sign in (1.0, -1.0):
+            cand = optim.ask()
+            np.testing.assert_array_almost_equal(cand.value, sign * 0.5 * eye[k])
+            optim.tell(cand, 2.0)
+    # all 2n polls failed: contraction, and polling starts again from e_1
+    c1 = optim.ask()
+    np.testing.assert_array_almost_equal(c1.value, 0.125 * eye[0])
+    optim.tell(c1, 1.0 - 0.5 * 1e-3 * 0.125**2)  # simple decrease is not enough
+    c2 = optim.ask()
+    np.testing.assert_array_almost_equal(c2.value, -0.125 * eye[0])
+    optim.tell(c2, 0.5)  # sufficient decrease: move, expand, and start a new poll from e_1
+    c3 = optim.ask()
+    np.testing.assert_array_almost_equal(c3.value, c2.value + 0.375 * eye[0])
+
+
+def test_dsbase_num_workers() -> None:
+    param = ng.p.Array(shape=(2,))
+    param.random_state.seed(12)
+    optim = optlib.DSbase(param, budget=50, num_workers=6)
+    optim.tell(optim.ask(), 1.0)
+    cands = [optim.ask() for _ in range(6)]
+    # the 2n coordinate directions, then additional random directions to use all the workers
+    np.testing.assert_array_almost_equal([c.value for c in cands[:4]], [[1, 0], [-1, 0], [0, 1], [0, -1]])
+    np.testing.assert_almost_equal(np.linalg.norm(cands[4].value), 1.0)
+    np.testing.assert_array_almost_equal(cands[5].value, -cands[4].value)
+    for cand in cands[::-1]:
+        optim.tell(cand, 2.0)
+    # all 6 polls failed: contraction
+    np.testing.assert_array_almost_equal(optim.ask().value, [0.5, 0])
+
+
+def test_dssubspace_update_rule() -> None:
+    param = ng.p.Array(shape=(6,))
+    param.random_state.seed(12)
+    optim = optlib.ParametrizedDSsubspace(subspace_dimension=3, initial_step=0.5)(param, budget=50)
+    optim.tell(optim.ask(), 1.0)
+    cands = []
+    for _ in range(6):  # 2p polls in the random subspace
+        cands.append(optim.ask())
+        optim.tell(cands[-1], 2.0)
+    dirs = np.array([c.value for c in cands]) / 0.5
+    np.testing.assert_array_almost_equal(dirs[1::2], -dirs[::2])
+    basis = dirs[::2]  # orthonormal basis of the subspace
+    np.testing.assert_array_almost_equal(basis @ basis.T, np.eye(3))
+    # all 2p polls failed: contraction, and a new random subspace
+    cand = optim.ask()
+    np.testing.assert_almost_equal(np.linalg.norm(cand.value), 0.25)
+    assert np.linalg.norm(cand.value / 0.25 - basis.T @ basis @ (cand.value / 0.25)) > 0.1
+    # the subspace dimension is capped to the dimension, and workers poll several subspaces
+    assert optlib.ParametrizedDSsubspace(subspace_dimension=5)(2, budget=10)._poll_size == 4  # type: ignore
+    assert optlib.DSsubspace(10, budget=10, num_workers=5)._poll_size == 8  # type: ignore
+
+
+def test_ds3p_update_rule() -> None:
+    param = ng.p.Array(shape=(3,))
+    param.random_state.seed(12)
+    optim = optlib.ParametrizedDS3p(initial_step=0.5)(param, budget=50)
+    x0 = optim.ask()  # first evaluates the initial point
+    np.testing.assert_array_equal(x0.value, np.zeros(3))
+    optim.tell(x0, 1.0)
+    # iteration k = 0: x + alpha_0 s and x - alpha_0 s, both evaluated even if the first one is better
+    c1 = optim.ask()
+    np.testing.assert_almost_equal(np.linalg.norm(c1.value), 0.5)
+    optim.tell(c1, 0.5)
+    c2 = optim.ask()
+    np.testing.assert_array_almost_equal(c2.value, -c1.value)
+    optim.tell(c2, 0.7)
+    # best of the three points is c1, and alpha_1 = alpha_0 / sqrt(2)
+    c3 = optim.ask()
+    np.testing.assert_almost_equal(np.linalg.norm(c3.value - c1.value), 0.5 / np.sqrt(2))
+    optim.tell(c3, 2.0)
+    c4 = optim.ask()
+    np.testing.assert_array_almost_equal(c4.value - c1.value, c1.value - c3.value)
+    optim.tell(c4, 3.0)
+    # the incumbent is the best of the three points, and the step size follows the schedule anyway
+    c5 = optim.ask()
+    np.testing.assert_almost_equal(np.linalg.norm(c5.value - c1.value), 0.5 / np.sqrt(3))
+    optim.tell(c5, 0.6)
+    c6 = optim.ask()
+    optim.tell(c6, 0.5 - 1e-12)  # any decrease is accepted
+    c7 = optim.ask()
+    np.testing.assert_almost_equal(np.linalg.norm(c7.value - c6.value), 0.5 / np.sqrt(4))
+
+
+def test_ds3p_num_workers() -> None:
+    param = ng.p.Array(shape=(3,))
+    param.random_state.seed(12)
+    optim = optlib.DS3p(param, budget=50, num_workers=4)
+    optim.tell(optim.ask(), 1.0)
+    cands = [optim.ask() for _ in range(4)]  # two pairs of opposite points, with the same step size
+    np.testing.assert_array_almost_equal([np.linalg.norm(c.value) for c in cands], np.ones(4))
+    np.testing.assert_array_almost_equal(cands[1].value, -cands[0].value)
+    np.testing.assert_array_almost_equal(cands[3].value, -cands[2].value)
+    for cand, loss in reversed(list(zip(cands, [3.0, 2.0, 0.5, 4.0]))):
+        optim.tell(cand, loss)
+    # best of the 5 points, and alpha_1 = 1 / sqrt(2)
+    np.testing.assert_almost_equal(np.linalg.norm(optim.ask().value - cands[2].value), 1 / np.sqrt(2))
+
+
+@pytest.mark.parametrize("min_step,expected_step", [(0.3, 1.0), (0.0, 0.25)])  # type: ignore
+def test_dsproba_restart(min_step: float, expected_step: float) -> None:
+    param = ng.p.Array(shape=(3,))
+    param.random_state.seed(12)
+    optim = optlib.ParametrizedDSproba(min_step=min_step)(param, budget=20)
+    optim.tell(optim.ask(), 1.0)  # initial point
+    for _ in range(4):  # two failed iterations: step 1 -> 0.5 -> 0.25
+        optim.tell(optim.ask(), 2.0)
+    # below min_step, the step is reset to its initial value, around the incumbent (still the initial point)
+    np.testing.assert_almost_equal(np.linalg.norm(optim.ask().value), expected_step)
+
+
+@pytest.mark.parametrize("name", NATIVE_DS)  # type: ignore
+def test_direct_search_chaining_starts_from_best(name: str) -> None:
+    param = ng.p.Array(shape=(3,))
+    optim = registry[name](param, budget=10)
+    start = param.spawn_child().set_standardized_data([1.0, 2.0, 3.0])
+    optim.tell(param.spawn_child().set_standardized_data([0.0, 0.0, 0.0]), 5.0)
+    optim.tell(start, 1.0)
+    cand = optim.ask()  # no need to evaluate the initial point again
+    np.testing.assert_almost_equal(np.linalg.norm(cand.value - start.value), 1.0)
+
+
+@pytest.mark.parametrize("name", NATIVE_DS)  # type: ignore
+def test_direct_search_pickle(name: str) -> None:
+    param = ng.p.Array(shape=(3,))
+    param.random_state.seed(12)
+    optim = registry[name](param, budget=40, num_workers=2)
+    fitness = Fitness([0.2, -0.3, 0.1])
+    for _ in range(5):
+        cand = optim.ask()
+        optim.tell(cand, fitness(cand.value))
+    pending = optim.ask()  # pickle with a pending candidate
+    with tempfile.TemporaryDirectory() as folder:
+        filepath = Path(folder) / "ds.pkl"
+        optim.dump(filepath)
+        loaded = optlib.base.Optimizer.load(filepath)
+    for opt in (optim, loaded):
+        opt.tell(pending, fitness(pending.value))
+        assert not opt._asked
+    for _ in range(10):
+        cands = [opt.ask() for opt in (optim, loaded)]
+        np.testing.assert_array_equal(cands[0].value, cands[1].value)
+        for opt, cand in zip((optim, loaded), cands):
+            opt.tell(cand, fitness(cand.value))
 
 
 # def test_bo_parametrization_and_parameters() -> None:

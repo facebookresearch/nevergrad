@@ -42,6 +42,7 @@ from .differentialevolution import *  # type: ignore  # noqa: F403
 from .es import *  # type: ignore  # noqa: F403
 from .oneshot import *  # noqa: F403
 from .recastlib import *  # noqa: F403
+from .dsoptimizers import *  # noqa: F403
 
 try:
     from .externalbo import HyperOpt  # pylint: disable=unused-import

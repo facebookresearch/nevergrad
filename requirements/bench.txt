@@ -60,7 +60,6 @@ Py-BOBYQA>=1.2
 ax-platform
 loguru # for fcmaes
 #gomea
-directsearch>=1.0
 numpy>=1.16.2
 scipy>=1.2.1
 #matplotlib>=3.0.3
