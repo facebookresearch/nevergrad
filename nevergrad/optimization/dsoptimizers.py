@@ -63,7 +63,7 @@ class _DSBase(base.Optimizer):
     def _random_unit_vector(self) -> np.ndarray:
         """Direction drawn uniformly on the unit sphere"""
         d = self._rng.normal(size=self.dimension)
-        return d / max(np.linalg.norm(d), 1e-300)
+        return d / max(float(np.linalg.norm(d)), 1e-300)
 
     def _internal_ask_candidate(self) -> p.Parameter:
         if self._x is None:
