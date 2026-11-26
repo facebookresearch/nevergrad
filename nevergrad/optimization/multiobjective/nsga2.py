@@ -132,7 +132,6 @@ class FastNonDominatedRanking:
             return 1
         return 0
 
-    # pylint: disable=too-many-locals
     def compute_ranking(
         self, candidates: tp.List[p.Parameter], k: tp.Optional[int] = None
     ) -> tp.List[tp.List[p.Parameter]]:
@@ -141,62 +140,35 @@ class FastNonDominatedRanking:
         :param candidates: List of candidates.
         :param k: Number of individuals.
         """
-        n_cand: int = len(candidates)
-        # dominated_by_cnt[i]: number of candidates dominating ith candidate
-        dominated_by_cnt: tp.List[int] = [0] * n_cand  # [0 for _ in range(len(candidates))]
-
-        # candidates_dominated[i]: List of candidates dominated by ith candidate
-        candidates_dominated: tp.List[tp.List[int]] = [[] for _ in range(n_cand)]
-
-        # front[i] contains the list of solutions belonging to front i
-        front: tp.List[tp.List[int]] = [[] for _ in range(n_cand + 1)]
-
-        uid2candidate = {c.uid: c for c in candidates}
-        uids = [c.uid for c in candidates]
-        for c1 in range(n_cand - 1):
-            uid1 = uids[c1]
-            for c2 in range(c1 + 1, n_cand):
-                uid2 = uids[c2]
-                dominance_test_result = self.compare(uid2candidate[uid1], uid2candidate[uid2])
-                # self.number_of_comparisons += 1
-                if dominance_test_result == -1:
-                    # c1 wins
-                    candidates_dominated[c1].append(c2)
-                    dominated_by_cnt[c2] += 1
-                elif dominance_test_result == 1:
-                    # c2 wins
-                    candidates_dominated[c2].append(c1)
-                    dominated_by_cnt[c1] += 1
-
-        # Reset rank
         for cand in candidates:
             cand._meta["non_dominated_rank"] = float("inf")
-
-        # Formation of front[0], i.e. candidates that do not dominated by others
-        front[0] = [c1 for c1 in range(n_cand) if dominated_by_cnt[c1] == 0]
-        last_fronts = 0
-        while len(front[last_fronts]) != 0:
-            last_fronts += 1
-            # Number of candidates in a frontier <= Number of candidates that dominate at least 1 candidate
-            assert len(front[last_fronts - 1]) <= len(candidates_dominated)
-            for c1 in front[last_fronts - 1]:
-                for c2 in candidates_dominated[c1]:
-                    dominated_by_cnt[c2] -= 1
-                    if dominated_by_cnt[c2] == 0:
-                        front[last_fronts].append(c2)
-
-        # Convert index to uid
-        # Trim to frontiers that contain the k candidates of interest
-        ranked_sublists = []
+        if not candidates:
+            return []
+        losses = np.array([np.atleast_1d(c.losses) for c in candidates], dtype=float)
+        # dominates[i, j]: candidate i is no worse than candidate j on every objective
+        # and better on at least one (same relation as the compare method)
+        no_worse = (losses[:, None] <= losses[None]).all(axis=2)
+        better = (losses[:, None] < losses[None]).any(axis=2)
+        dominates = np.asarray(no_worse & better)
+        dominated_by_cnt = dominates.sum(axis=0)  # number of candidates dominating each candidate
+        remaining = np.ones(len(candidates), dtype=bool)
+        previous = np.zeros(0, dtype=int)  # indices of the previous front
+        ranked_sublists: tp.List[tp.List[p.Parameter]] = []
         count = 0
-        for front_i in range(last_fronts):
-            count += len(front[front_i])
-            for cand_i in front[front_i]:
-                uid2candidate[uids[cand_i]]._meta["non_dominated_rank"] = front_i
-            ranked_sublists.append([uid2candidate[uids[i]] for i in front[front_i]])
-            if (k is not None) and (count >= k):
-                break
-
+        while remaining.any() and (k is None or count < k):
+            front = np.flatnonzero(remaining & (dominated_by_cnt == 0))
+            if previous.size:
+                # order the front as the classic algorithm finds it, i.e. by the position of its last
+                # dominator in the previous front, so that selection among ties is unchanged
+                positions = np.where(dominates[previous][:, front], np.arange(previous.size)[:, None], -1)
+                front = front[np.argsort(positions.max(axis=0), kind="stable")]
+            remaining[front] = False
+            dominated_by_cnt -= dominates[front].sum(axis=0)
+            for i in front:
+                candidates[i]._meta["non_dominated_rank"] = len(ranked_sublists)
+            ranked_sublists.append([candidates[i] for i in front])
+            count += front.size
+            previous = front
         return ranked_sublists
 
 

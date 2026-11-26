@@ -164,7 +164,7 @@ def test_pareto_dominance(losses1, losses2, expected) -> None:
 
 
 def test_three_objective_non_dominated_front() -> None:
-    candidates = [ng.p.Scalar() for _ in range(3)]
+    candidates: tp.List[p.Parameter] = [ng.p.Scalar() for _ in range(3)]
     for candidate, losses in zip(candidates, [[0, 1, 2], [2, 0, 1], [1, 2, 0]]):
         candidate._losses = np.array(losses)
     frontiers = nsga2.FastNonDominatedRanking().compute_ranking(candidates)
@@ -178,9 +178,35 @@ def test_evolution_strategy_three_objective_ask_tell() -> None:
     )
     optimizer.parametrization.random_state.seed(12)
     optimizer.tell(ng.p.MultiobjectiveReference(), [4, 4, 4])
-    losses = [[3, 3, 3], [0, 1, 2], [2, 0, 1], [1, 2, 0]]
+    losses: tp.List[tp.List[float]] = [[3, 3, 3], [0, 1, 2], [2, 0, 1], [1, 2, 0]]
     for index in range(len(losses)):
         optimizer.suggest(index)
         candidate = optimizer.ask()
         optimizer.tell(candidate, losses[int(candidate.value)])
     assert np.isfinite(optimizer.ask().value)
+
+
+@pytest.mark.parametrize("num_objectives", [1, 2, 3])  # type: ignore
+def test_compute_ranking_fronts(num_objectives: int) -> None:
+    rng = np.random.RandomState(12)
+    ranker = nsga2.FastNonDominatedRanking()
+    for _ in range(20):
+        candidates: tp.List[p.Parameter] = [ng.p.Scalar() for _ in range(rng.randint(1, 30))]
+        for candidate in candidates:  # few distinct values, so that ties and duplicates are frequent
+            candidate._losses = rng.randint(0, 4, size=num_objectives).astype(float)
+        fronts = ranker.compute_ranking(candidates)
+        assert sorted(c.uid for f in fronts for c in f) == sorted(c.uid for c in candidates)
+        for rank, front in enumerate(fronts):
+            assert all(c._meta["non_dominated_rank"] == rank for c in front)
+            # no candidate of the front is dominated by a candidate of this front or of a later one
+            later = [c for f in fronts[rank:] for c in f]
+            assert all(ranker.compare(c1, c2) != 1 for c1 in front for c2 in later)
+            # each candidate of the next front is dominated by a candidate of this front
+            if rank + 1 < len(fronts):
+                assert all(any(ranker.compare(c1, c2) == -1 for c1 in front) for c2 in fronts[rank + 1])
+        # with k, only the first fronts which contain at least k candidates are returned
+        k = rng.randint(1, len(candidates) + 1)
+        partial = ranker.compute_ranking(candidates, k)
+        assert [f for f in fronts[: len(partial)]] == partial
+        sizes = [len(f) for f in partial]
+        assert sum(sizes[:-1]) < k <= sum(sizes)
