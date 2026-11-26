@@ -2,6 +2,22 @@
 
 ## main
 
+- The dependency on `directsearch` (GPL-3.0-or-later) has been removed entirely, from the main requirements
+  as well as from the `benchmark`/`all` extras ([#1732](https://github.com/facebookresearch/nevergrad/issues/1732)).
+  The four direct search optimizers which wrapped it are now native (MIT) ask & tell implementations, written from
+  the papers, which are seedable, picklable and support `num_workers > 1`. They have configurable versions,
+  and when their step size falls below `min_step` (default `1e-8`) they restart from the best point with the initial step size:
+  - `DSbase` (`ParametrizedDSbase`): deterministic coordinate (compass) search with sufficient decrease
+    (Kolda, Lewis, Torczon, SIAM Review 2003);
+  - `DSproba` (`ParametrizedDSproba`): direct search based on probabilistic descent
+    (Gratton, Royer, Vicente, Zhang, SIAM J. Optim. 2015);
+  - `DSsubspace` (`ParametrizedDSsubspace`): direct search based on probabilistic descent in random subspaces
+    (Roberts, Royer, SIAM J. Optim. 2023);
+  - `DS3p` (`ParametrizedDS3p`, no restart): Stochastic Three Points (Bergou, Gorbunov, Richtárik, SIAM J. Optim. 2020).
+
+  Their results differ from the former wrappers, and so do those of the optimizers built on `DSproba`
+  (`MultiDS`, `MetaModelDSproba`, `DS2`-`DS8`, `NgDS`, `CSEC10`...).
+
 ## v0.11.0 (2023-07-25)
 - additional benchmarks
 - adding tests in the CI
