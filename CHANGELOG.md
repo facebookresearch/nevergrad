@@ -2,6 +2,7 @@
 
 ## main
 
+- Require Python 3.11 or later: Python 3.9 and 3.10 have reached end of life, and CI only runs Python 3.11.
 - The dependency on `directsearch` (GPL-3.0-or-later) has been removed entirely, from the main requirements
   as well as from the `benchmark`/`all` extras ([#1732](https://github.com/facebookresearch/nevergrad/issues/1732)).
   The four direct search optimizers which wrapped it are now native (MIT) ask & tell implementations, written from
