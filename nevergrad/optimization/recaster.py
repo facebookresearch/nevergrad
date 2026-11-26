@@ -17,6 +17,7 @@ SequentialRecastOptimizer.
 import warnings
 import threading
 import queue
+import weakref
 import numpy as np
 import nevergrad.common.typing as tp
 from nevergrad.common.errors import NevergradError
@@ -25,8 +26,11 @@ from . import base
 from .base import IntOrParameter
 
 
-class StopOptimizerThread(Exception):
-    pass
+class StopOptimizerThread(BaseException):
+    """Raised inside the background thread, from the fake objective function, to stop the
+    underlying optimization. It derives from BaseException (like GeneratorExit) so that
+    libraries catching Exception around their objective calls do not swallow it.
+    """
 
 
 class TooManyAskError(NevergradError):
@@ -51,25 +55,31 @@ class _MessagingThread(threading.Thread):
         self.messages_ask: tp.Any = queue.Queue()
         self.messages_tell: tp.Any = queue.Queue()
         self.call_count = 0
-        self.error: tp.Optional[Exception] = None
+        self.error: tp.Optional[BaseException] = None
         self._caller = caller
         self._args = args
         self._kwargs = kwargs
+        self._stop_requested = threading.Event()
         self.output: tp.Optional[tp.Any] = None  # TODO add a "done" attribute ?
 
     def run(self) -> None:
         """Starts the thread and run the "caller" function argument on
         the fake callable, which posts messages and awaits for their answers.
+
+        Whatever happens, a final message is posted in the ask queue so that the
+        main thread never waits forever: None if the optimization finished or was
+        stopped, or the exception which was raised.
         """
+        final_message: tp.Optional[BaseException] = None
         try:
             self.output = self._caller(self._fake_callable, *self._args, **self._kwargs)
         except StopOptimizerThread:  # gracefully stopping the thread
-            self.messages_ask.put(ValueError("Optimization told to finish"))
-        except Exception as e:  # pylint: disable=broad-except
-            self.messages_ask.put(e)
+            pass
+        except BaseException as e:  # pylint: disable=broad-except
+            final_message = e
             self.error = e
-        else:
-            self.messages_ask.put(None)
+        finally:
+            self.messages_ask.put(final_message)
 
     def _fake_callable(self, *args: tp.Any) -> tp.Any:
         """
@@ -77,7 +87,14 @@ class _MessagingThread(threading.Thread):
         main thread and blocks on get from tell queue until point
         is evaluated on main thread and placed into tell queue when
         it is then returned to the caller.
+
+        Once the thread was asked to stop, every new call raises StopOptimizerThread,
+        so that the stop is effective even if the underlying library catches it.
+        A loss which was already provided is still returned, so that whether the
+        library gets to finish does not depend on thread timing.
         """
+        if self._stop_requested.is_set():
+            raise StopOptimizerThread()
         self.call_count += 1
         self.messages_ask.put(args[0])  # sends a message
         candidate = self.messages_tell.get()  # get evaluated message
@@ -86,16 +103,26 @@ class _MessagingThread(threading.Thread):
         return candidate
 
     def stop(self) -> None:
-        """Notifies the thread that it must stop"""
-        self.messages_tell.put(None)
+        """Notifies the thread that it must stop (does not wait for it).
+        This can be called several times, from any thread.
+        """
+        self._stop_requested.set()
+        self.messages_tell.put(None)  # wakes the thread up if it is waiting for a loss
 
 
 class MessagingThread:
-    """Encapsulate the inner thread, so that kill order is automatically called at deletion."""
+    """Encapsulate the inner thread, so that it is stopped when this object is deleted.
+
+    The thread is stopped deterministically by calling :code:`close` (or :code:`stop`).
+    As a fallback, a finalizer stops it when this object is garbage collected. The finalizer
+    only references the inner thread, never this object or the optimizer.
+    """
 
     def __init__(self, caller: tp.Callable[..., tp.Any], *args: tp.Any, **kwargs: tp.Any) -> None:
         self._thread = _MessagingThread(caller, *args, **kwargs)
         self._thread.start()
+        self._finalizer = weakref.finalize(self, self._thread.stop)
+        self._finalizer.atexit = False  # stopping must not rely on interpreter shutdown
 
     def is_alive(self) -> bool:
         return self._thread.is_alive()
@@ -105,7 +132,7 @@ class MessagingThread:
         return self._thread.output
 
     @property
-    def error(self) -> tp.Optional[Exception]:
+    def error(self) -> tp.Optional[BaseException]:
         return self._thread.error
 
     @property
@@ -117,10 +144,23 @@ class MessagingThread:
         return self._thread.messages_ask
 
     def stop(self) -> None:
+        """Notifies the thread that it must stop, without waiting for it"""
         self._thread.stop()
 
-    def __del__(self) -> None:
-        self.stop()  # del method of the thread class does not work
+    def close(self, timeout: tp.Optional[float] = 10.0) -> None:
+        """Stops the thread and waits for it to finish (at most timeout seconds).
+        The thread is usually waiting for a loss, in which case it finishes immediately.
+        """
+        self._finalizer()  # calls self._thread.stop() if it has not already run
+        if self._thread is threading.current_thread():
+            return  # cannot wait for itself
+        self._thread.join(timeout)
+        if self._thread.is_alive():
+            warnings.warn(
+                f"The background thread of a recast optimizer did not stop within {timeout}s. "
+                "The underlying library may be computing, or ignoring the stop request.",
+                base.errors.NevergradRuntimeWarning,
+            )
 
 
 class RecastOptimizer(base.Optimizer):
@@ -196,10 +236,32 @@ class RecastOptimizer(base.Optimizer):
         else:
             return None  # use default
 
-    def __del__(self) -> None:
-        # explicitly ask the thread to stop (better be safe :))
-        if self._messaging_thread is not None:
+    def tell(
+        self,
+        candidate: p.Parameter,
+        loss: tp.Loss,
+        constraint_violation: tp.Optional[tp.Loss] = None,
+        penalty_style: tp.Optional[tp.ArrayLike] = None,
+    ) -> None:
+        super().tell(candidate, loss, constraint_violation, penalty_style)
+        self._stop_thread_if_budget_is_spent()
+
+    def _stop_thread_if_budget_is_spent(self) -> None:
+        """Stops the background thread (without waiting for it) once the asked candidates
+        have consumed the budget, so that it does not linger until garbage collection, eg when
+        this optimizer is a component of a Chaining or a Portfolio.
+        Later asks, if any, provide random points, as when the underlying optimizer has converged.
+        """
+        if self.budget is None or self._messaging_thread is None:
+            return
+        if self.num_tell - self.num_tell_not_asked >= self.budget:
             self._messaging_thread.stop()
+
+    def close(self) -> None:
+        """Stops the background thread and waits for it to finish"""
+        if self._messaging_thread is not None:
+            self._messaging_thread.close()
+        super().close()
 
 
 class SequentialRecastOptimizer(RecastOptimizer):
@@ -321,6 +383,7 @@ class SequentialRecastOptimizer(RecastOptimizer):
             self._internal_ask_candidate()
 
         self._enable_pickling = True
+        self._stop_thread_if_budget_is_spent()
 
 
 class BatchRecastOptimizer(RecastOptimizer):

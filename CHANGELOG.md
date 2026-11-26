@@ -2,6 +2,7 @@
 
 ## main
 
+- Optimizers have a `close()` method and can be used as context managers. For optimizers wrapping libraries which call the objective function themselves (eg: scipy), this stops their background thread. Such threads are also stopped once the budget is spent, so scripts no longer hang at exit after `minimize`.
 - Require Python 3.11 or later: Python 3.9 and 3.10 have reached end of life, and CI only runs Python 3.11.
 
 ## v0.11.0 (2023-07-25)

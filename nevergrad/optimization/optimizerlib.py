@@ -2044,6 +2044,9 @@ class Portfolio(base.Optimizer):
                 ind = self.current_bests["pessimistic"].parameter._meta.get("optim_index", -1)
                 if ind >= 0 and ind < len(self.optims):  # not a tell not asked
                     if self.num_workers == 1 or self.optims[ind].num_workers > 1:
+                        for opt in self.optims:
+                            if opt is not self.optims[ind]:
+                                opt.close()  # eg: stops background threads of recast optimizers
                         self.optims = [self.optims[ind]]  # throw away everything else
         num = len(self.optims)
         if num == 1:
