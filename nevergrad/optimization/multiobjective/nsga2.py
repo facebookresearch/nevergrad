@@ -149,7 +149,7 @@ class FastNonDominatedRanking:
         # and better on at least one (same relation as the compare method)
         no_worse = (losses[:, None] <= losses[None]).all(axis=2)
         better = (losses[:, None] < losses[None]).any(axis=2)
-        dominates = no_worse & better
+        dominates = np.asarray(no_worse & better)
         dominated_by_cnt = dominates.sum(axis=0)  # number of candidates dominating each candidate
         remaining = np.ones(len(candidates), dtype=bool)
         previous = np.zeros(0, dtype=int)  # indices of the previous front
