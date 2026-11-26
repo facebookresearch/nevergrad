@@ -1,6 +1,10 @@
 # Changelog
 
 ## main
+- `PBOFunction` and `WModelFunction` now use the maintained `ioh` package instead of the unmaintained
+  `IOHexperimenter` 0.2.x. PBO function ids now follow the `ioh` numbering (MIS is fid 22, Ising models are 19-21),
+  the Ising models use `ioh`'s fixed implementations, the W-model epistasis layer and instance transformations follow
+  `ioh`, and `WModelFunction`'s `ruggedness` must now be a multiple of `dim`.
 
 ## v0.11.0 (2023-07-25)
 - additional benchmarks

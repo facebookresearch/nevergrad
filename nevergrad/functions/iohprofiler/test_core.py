@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import typing as tp
 from unittest import SkipTest
 import pytest
 import numpy as np
@@ -57,3 +58,56 @@ def test_W_model() -> None:
     x = func.parametrization.sample()
     func2 = core.PBOFunction(2, 0, 16)
     assert func(x.value) == func2(x.value), "W-model with default setting should equal base_function"
+
+
+_X = [1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]
+
+
+# reference values were computed with the former IOHexperimenter 0.2.9.2 backend
+# (where MIS was available as fid 19 instead of 22)
+@pytest.mark.parametrize(  # type: ignore
+    "fid,iid,expected",
+    [
+        (1, 1, -10.0),
+        (1, 3, -836.4213657234893),
+        (3, 1, -84.0),
+        (7, 3, -831.9113703459087),
+        (14, 1, 0.0),
+        (18, 3, -802.1061835027671),
+        (22, 1, 150.0),
+        (23, 3, -547.7816615583288),
+    ],
+)
+def test_PBO_values(fid: int, iid: int, expected: float) -> None:
+    try:
+        func = core.PBOFunction(fid, iid, 16)
+    except ModuleNotFoundError as e:
+        raise SkipTest("IOH is not installed") from e
+    assert func(_X) == pytest.approx(expected, rel=1e-12)
+
+
+# reference values were computed with the former IOHexperimenter 0.2.9.2 backend
+@pytest.mark.parametrize(  # type: ignore
+    "kwargs,expected",
+    [
+        (dict(base_function="OneMax", iid=1, dummy=0.5), -7.0),
+        (dict(base_function="LeadingOnes", iid=1, neutrality=3), -3.0),
+        (dict(base_function="OneMax", iid=1, ruggedness=16), -11.0),
+        (dict(base_function="LeadingOnes", iid=0, ruggedness=16), -3.0),
+    ],
+)
+def test_W_model_values(kwargs: tp.Dict[str, tp.Any], expected: float) -> None:
+    try:
+        func = core.WModelFunction(dim=16, **kwargs)
+    except ModuleNotFoundError as e:
+        raise SkipTest("IOH is not installed") from e
+    assert func(_X) == expected
+
+
+def test_W_model_ruggedness_multiple_of_dim() -> None:
+    try:
+        import ioh  # noqa  # pylint: disable=unused-import,import-outside-toplevel
+    except ModuleNotFoundError as e:
+        raise SkipTest("IOH is not installed") from e
+    with pytest.raises(ValueError, match="multiple of the dimension"):
+        core.WModelFunction(dim=16, ruggedness=5)

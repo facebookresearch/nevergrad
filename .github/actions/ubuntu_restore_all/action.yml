@@ -16,7 +16,6 @@ runs:
         rm -rf venv && python3 -m venv venv
         . venv/bin/activate
         pip install --progress-bar off -U pip setuptools==78.1.1
-        ( unset GITHUB_REF ; pip install --progress-bar off IOHexperimenter>=0.2.9.2 )
         pip install --progress-bar off -e .[all]
         #pip install --progress-bar off --use-deprecated=legacy-resolver -e .[all]
         pip install --progress-bar off -U matplotlib==3.9.0 pyomo==6.10.0
